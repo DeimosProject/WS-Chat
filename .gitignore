@@ -1,0 +1,11 @@
+composer.phar
+composer.lock
+/vendor/
+.idea/
+log/
+build/
+storage/
+assets/compile/
+file.db
+web/crossdomain.xml
+assets/config/*.php

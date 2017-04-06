@@ -1,0 +1,19 @@
+{
+  "name": "deimos/ws-example",
+  "description": "WebSocket example.",
+  "keywords": [
+  ],
+  "homepage": "https://github.com/DeimosProject/ws-example",
+  "license": "MIT",
+  "type": "project",
+  "require": {
+    "cboden/Ratchet": "~0.3",
+    "deimos/orm": "~2.0",
+    "deimos/auth": "~0.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Deimos\\": "src/"
+    }
+  }
+}
