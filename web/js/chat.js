@@ -37,11 +37,11 @@ $(function () {
     function Users(response) {
         var html = '<ul>';
         response.users.forEach(function (item, i) {
-            html += '<li><img src="' + item.src + '">' + item.name + '</li>';
+            html += '<li><img src="' + item.image + '">' + item.login + '</li>';
         });
         html += '<ul>';
 
-        inner.find('.users').html(html);
+        $('#users').html(html);
     }
 
     function Setup(response) {
@@ -49,7 +49,7 @@ $(function () {
     }
 
     conn.onmessage = function(e) {
-        var data = JOSN.parse(e.data);
+        var data = JSON.parse(e.data);
         if(data.type === 'message') {
             Message(data);
         } else if (data.type === 'users') {

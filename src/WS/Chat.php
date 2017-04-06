@@ -89,12 +89,18 @@ class Chat implements MessageComponentInterface
             return;
         }
 
-//        $this->writeLog('open connection (' . $conn->remoteAddress . ' - ' . $conn->resourceId . ')', 'login.log');
-
         $this->users[$user->id] = $user;
 
         $this->clients->attach($conn);
 
+        $this->renewUsers();
+    }
+
+    /**
+     * отправляет пользователям обновленный список "онлайн"
+     */
+    protected function renewUsers()
+    {
         $users = [];
         foreach ($this->users as $u) {
             $users[] = [
@@ -103,10 +109,15 @@ class Chat implements MessageComponentInterface
             ];
         }
 
-        $conn->send($this->message('', self::STATUS_OK, [
+        $message = $this->message('', self::STATUS_OK, [
             'type' => self::DATA_TYPE_USERS,
-            'users' =>
-        ]));
+            'users' => $users,
+        ]);
+
+        foreach ($this->clients as $client)
+        {
+            $client->send($message);
+        }
     }
 
     /**
@@ -126,13 +137,9 @@ class Chat implements MessageComponentInterface
         // The connection is closed, remove it, as we can no longer send it messages
         $this->clients->detach($conn);
 
-//        if($user)
-//        {
-//            $this->orm->repository('UsersChatId')
-//                ->where('chatId', $conn->resourceId)
-//                ->findOne()
-//                ->delete();
-//        }
+        unset($this->users[$user->id]);
+
+        $this->renewUsers();
 
         echo "Connection {$conn->resourceId} has disconnected\n";
     }
@@ -179,20 +186,17 @@ class Chat implements MessageComponentInterface
             $login = '<b>&lap; ' . $user->login . ' &gap;</b> ';
         }
 
-//        $this->writeLog($msg);
-
         $msg = $login . '<i>' . date('Y-m-d H:i:s') . '</i>' . htmlspecialchars($msg);
 
         foreach ($this->clients as $client)
         {
-            $class = '';
-
+            $class = [];
             if ($conn === $client)
             {
-                $class = 'own';
+                $class = ['class' => 'own'];
             }
 
-            $client->send('<msg class="' . $class . '">' . $msg . '</msg>');
+            $client->send($this->message($msg, self::STATUS_OK, $class));
         }
     }
 
@@ -203,7 +207,6 @@ class Chat implements MessageComponentInterface
      */
     public function getUser($request)
     {
-        //$connect->WebSocket->request
         $secure = new Secure();
         $token = $secure->decrypt($request->getCookie('wsToken'));
 
@@ -233,7 +236,7 @@ class Chat implements MessageComponentInterface
             $conn->send($this->message('Спам не приветствуется. Подождите немного', self::STATUS_WARNING));
             $conn->spam = 2;
         }
-        elseif(empty($conn->spam))
+        else if(empty($conn->spam))
         {
             $conn->spam = 1;
             return true;
