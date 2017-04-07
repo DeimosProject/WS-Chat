@@ -1,8 +1,14 @@
 $(function () {
-    var conn = new WebSocket('ws://ws2.localhost:8080');
+    var conn = null;
     var message = $('#message');
     var inner = $('#messages').find('.inner');
     inner.data('counter', 0);
+
+    function createConnection() {
+        conn = new WebSocket('ws://ws2.localhost:8080');
+    }
+
+    createConnection();
 
     conn.onopen = function(e) {
         message.attr('disabled', false);
@@ -10,8 +16,14 @@ $(function () {
     };
 
     conn.onclose = function (e) {
-        alert('DANGER mazafaka!');
-        window.location.reload();
+        var msg = {
+            'class': 'error',
+            'text': 'Произошла ошибка. Следующая попытка восстановления соединения через 3 секунды'
+        };
+        Message(msg);
+        setTimeout(function() {
+            createConnection();
+        }, 3000);
     };
 
     function Message(response) {
@@ -37,11 +49,14 @@ $(function () {
     function Users(response) {
         var html = '<ul>';
         response.users.forEach(function (item, i) {
-            html += '<li><img src="' + item.image + '">' + item.login + '</li>';
+            if(!item.hasOwnProperty('image')) {
+                item.image = '';
+            }
+            html += '<li><img src="' + item.image + '"><span>' + item.login + '</span></li>';
         });
         html += '<ul>';
 
-        $('#users').html(html);
+        $('#users').find('.list').html(html);
     }
 
     function Setup(response) {
@@ -63,7 +78,7 @@ $(function () {
 
     $('#send').click(function () {
         var $this = $(this);
-        if(message.val() && $this.attr('disabled')) {
+        if(message.val() && !$this.attr('disabled')) {
             conn.send(message.val());
             message.val('');
             $this.attr('disabled', 'disabled');

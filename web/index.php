@@ -7,14 +7,15 @@
 
     $user = new \Deimos\WS\User();
     $ids = $user->chatId();
+    $version = 0;
 ?><!DOCTYPE html>
 <html>
 <head>
     <title>Deimos chat</title>
-    <link href="/css/chat.css" rel="stylesheet"/>
-    <script src="//code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha256-/SIrNqv8h6QGKDuNoLGA4iret+kyesCkHGzVUUV0shc=" crossorigin="anonymous"></script>
-    <script src="/js/chat.js"></script>
-    <script src="/bootstrap/js/bootstrap.min.js"></script>
+    <link href="/css/chat.css?v<?=$version?>" rel="stylesheet"/>
+    <script async defer src="//code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha256-/SIrNqv8h6QGKDuNoLGA4iret+kyesCkHGzVUUV0shc=" crossorigin="anonymous"></script>
+    <script async defer src="/js/chat.js?v<?=$version?>"></script>
+    <script async defer src="/bootstrap/js/bootstrap.min.js"></script>
 </head>
 <body>
 <div class="wrapper">
@@ -45,15 +46,20 @@
                     </div>
                     <div class="message-area input-group">
                         <input class="form-control" disabled="disabled" maxlength="50" id="message" name="message">
+<!--                        <select class="form-control" id="send-to"></select>-->
                         <span class="input-group-addon btn btn-success" id="send">Send message</span>
                     </div>
                 </div>
             </div>
-            <div class="col-md-2" id="users"></div>
+            <div class="col-md-2" id="users">
+                <div class="row">
+                    <div class="header">Пользователи онлайн:</div>
+                    <div class="list"></div>
+                </div>
+            </div>
             <div class="clearfix"></div>
         </div>
     </div>
 </div>
 </body>
 </html>
-
