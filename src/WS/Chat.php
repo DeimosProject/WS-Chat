@@ -19,9 +19,9 @@ class Chat implements MessageComponentInterface
     const DATA_TYPE_SETUP   = 'setup';
 
     /**
-     * @var \SplObjectStorage
+     * @var \Ratchet\WebSocket\Version\RFC6455\Connection[]
      */
-    protected $clients;
+    protected $clients = [];
 
     /**
      * @var \Deimos\WS\Models\User[]
@@ -56,8 +56,6 @@ class Chat implements MessageComponentInterface
      */
     public function __construct()
     {
-        $this->clients = new \SplObjectStorage;
-
         $this->builder = \Deimos\WS\ObjectsCache::$storage['builder'];
 
         $this->orm = $this->builder->orm();
@@ -78,8 +76,11 @@ class Chat implements MessageComponentInterface
         $user = $this->getUser($conn->WebSocket->request);
         echo __FUNCTION__ . PHP_EOL;
 
-        if(empty($user->id)) {
+        if (empty($user->id))
+        {
             $conn->send($this->message('<h2>Сперва залогиньтесь.</h2>'));
+
+            return;
         }
 
         if (isset($this->users[$user->id]))
@@ -89,9 +90,13 @@ class Chat implements MessageComponentInterface
             return;
         }
 
-        $this->users[$user->id] = $user;
+        $conn->send($this->message('', self::STATUS_OK, [
+            'type'     => self::DATA_TYPE_SETUP,
+            'messages' => [], // TODO
+        ]));
 
-        $this->clients->attach($conn);
+        $this->users[$user->id]   = $user;
+        $this->clients[$user->id] = $conn;
 
         $this->renewUsers();
     }
@@ -104,8 +109,9 @@ class Chat implements MessageComponentInterface
         $users = [];
         foreach ($this->users as $u) {
             $users[] = [
+                'id' => $u->id,
                 'login' => $u->login,
-                'image' => '', // TODO
+                'image' => md5('' . $u->email), // TODO
             ];
         }
 
@@ -135,8 +141,7 @@ class Chat implements MessageComponentInterface
 //        $this->writeLog('close connection (' . $conn->remoteAddress . ' - ' . $conn->resourceId . ')', 'login.log');
 
         // The connection is closed, remove it, as we can no longer send it messages
-        $this->clients->detach($conn);
-
+        unset($this->clients[$user->id]);
         unset($this->users[$user->id]);
 
         $this->renewUsers();
@@ -173,20 +178,52 @@ class Chat implements MessageComponentInterface
     {
         $request = $conn->WebSocket->request;
 
-        if(!$this->checkTime($conn))
+        if (!$this->checkTime($conn))
         {
             return;
         }
 
+        $msg = json_decode($msg);
+
+        if (json_last_error() || empty($msg->text))
+        {
+            return;
+        }
+
+        if (!empty($msg->to))
+        {
+            if (empty($this->clients[$msg->to]))
+            {
+                return;
+            }
+        }
+
         $user = $this->getUser($request);
 
+        if(!$user)
+        {
+            return;
+        }
+
         $login = '';
-        if ($user)
+        if (!empty($msg->to))
+        {
+            $login = '<b>&lap; ' . $user->login . ' > ' . $this->users[$msg->to]->login . ' &gap;</b> ';
+        }
+        else
         {
             $login = '<b>&lap; ' . $user->login . ' &gap;</b> ';
         }
 
-        $msg = $login . '<i>' . date('Y-m-d H:i:s') . '</i>' . htmlspecialchars($msg);
+        $message = $login . '<i>' . date('Y-m-d H:i:s') . '</i>' . htmlspecialchars($msg->text);
+
+        if (!empty($msg->to))
+        {
+            $this->clients[$msg->to]->send($this->message($message, self::STATUS_OK, ['class' => 'private']));
+            $this->clients[$user->id]->send($this->message($message, self::STATUS_OK, ['class' => 'private-own']));
+
+            return;
+        }
 
         foreach ($this->clients as $client)
         {
@@ -196,7 +233,7 @@ class Chat implements MessageComponentInterface
                 $class = ['class' => 'own'];
             }
 
-            $client->send($this->message($msg, self::STATUS_OK, $class));
+            $client->send($this->message($message, self::STATUS_OK, $class));
         }
     }
 

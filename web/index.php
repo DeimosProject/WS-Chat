@@ -7,15 +7,14 @@
 
     $user = new \Deimos\WS\User();
     $ids = $user->chatId();
-    $version = 0;
+    $version = 3;
 ?><!DOCTYPE html>
 <html>
 <head>
     <title>Deimos chat</title>
     <link href="/css/chat.css?v<?=$version?>" rel="stylesheet"/>
-    <script async defer src="//code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha256-/SIrNqv8h6QGKDuNoLGA4iret+kyesCkHGzVUUV0shc=" crossorigin="anonymous"></script>
-    <script async defer src="/js/chat.js?v<?=$version?>"></script>
-    <script async defer src="/bootstrap/js/bootstrap.min.js"></script>
+    <link href="/bootstrap/css/bootstrap.min.css?v<?=$version?>" rel="stylesheet"/>
+    <link href="/bootstrap/css/bootstrap-theme.min.css?v<?=$version?>" rel="stylesheet"/>
 </head>
 <body>
 <div class="wrapper">
@@ -27,7 +26,7 @@
                     <?php
                     if ($user->user()) {
                     ?>
-                        <span><b>&nbsp; &lap; <?php echo $user->getLogin(); ?> &gap;</b></span>
+                        <span><b title="Settings" class="user-config-btn" data-toggle="modal" data-target="#user-settings-modal"> &lap; <?php echo $user->getLogin(); ?> &gap;</b></span>
                     <?php
                     } else {
                     ?>
@@ -45,8 +44,10 @@
                         <div class="inner"></div>
                     </div>
                     <div class="message-area input-group">
-                        <input class="form-control" disabled="disabled" maxlength="50" id="message" name="message">
-<!--                        <select class="form-control" id="send-to"></select>-->
+                        <div class="form-control no-padding">
+                            <input class="form-control" disabled="disabled" maxlength="50" id="message" name="message">
+                            <select class="form-control" id="send-to"></select>
+                        </div>
                         <span class="input-group-addon btn btn-success" id="send">Send message</span>
                     </div>
                 </div>
@@ -60,6 +61,27 @@
             <div class="clearfix"></div>
         </div>
     </div>
+    <div id="user-settings-modal" tabindex="-1" role="dialog" class="modal fade">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+                    <h4 class="modal-header-text">User settings</h4>
+                </div>
+                <div class="modal-body">
+                    <div id="user-config-modal-wrapper">
+                        <div class="input-group">
+                            <input class="form-control" name="email">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer"></div>
+            </div>
+        </div>
+    </div>
 </div>
+<script src="//code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha256-/SIrNqv8h6QGKDuNoLGA4iret+kyesCkHGzVUUV0shc=" crossorigin="anonymous"></script>
+<script src="/js/chat.js?v<?=$version?>"></script>
+<script src="/bootstrap/js/bootstrap.min.js"></script>
 </body>
 </html>

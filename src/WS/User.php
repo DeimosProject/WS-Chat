@@ -46,17 +46,17 @@ class User
     public function auth($login, $pass)
     {
         /**
-         * @var $password Password
+         * @var $provider Password
          */
-        $password = $this->auth->domain()->provider('domainPassword');
-        $user = $password->login($login, $pass);
+        $provider = $this->auth->domain()->provider('domainPassword');
+        $user = $provider->login($login, $pass);
 
         if(!$user && !$this->orm->repository('user')->where('login', $login)->findOne())
         {
             $this->orm->create('user', [
                 'email'    => $login . '@deimos',
                 'login'    => $login,
-                'password' => $password->hash($password)
+                'password' => $provider->hash($pass)
             ]);
 
             $this->auth->domain()->setUser($user);

@@ -12,6 +12,7 @@ html, body {
 }
 .login-form {
   background: #ebc5e7;
+  font-size: 1.2em;
 }
 .wrapper {
   padding: 0;
@@ -29,12 +30,27 @@ html, body {
   #send {
     cursor: pointer;
   }
+  @send-to-width: 120px;
+  #send-to {
+    width: @send-to-width;
+    border: 0;
+    border-left: 1px solid rgba(0,0,0,.2);
+  }
+  #message {
+    border: 0;
+    font-size: 1.4em;
+    width: 700px;
+    width: calc(100% ~'-' @send-to-width);
+  }
+  >.form-control {
+    //box-sizing: content-box;
+  }
 }
 #messages {
   height: 650px;
+  overflow: auto;
   background: rgba(232, 232, 201, 0.9);
   .inner {
-    overflow: auto;
   }
   msg {
     display: block;
@@ -45,10 +61,22 @@ html, body {
     &.own {
       background: rgba(125, 255, 209, 0.4);
     }
+    &.private {
+      background: #ebc5e7;
+    }
+    &.private-own {
+      background: rgba(229, 232, 0, 0.8);
+    }
+    &.error {
+      background: rgba(232, 57, 67, 0.6);
+    }
     >i {
       padding-right: .2em;
       font-weight: bold;
       display: inline-block;
+    }
+    &.deleted {
+      cursor: no-drop;
     }
   }
 }
@@ -67,7 +95,20 @@ header {
     ul {
       padding-top: 15px;
     }
+    .send-to-user {
+      cursor: pointer;
+    }
   }
+}
+.user-config-btn {
+  cursor: help;
+}
+.modal-header-text {
+  margin: 0;
+}
+
+.no-padding {
+  padding: 0!important;
 }
 
 @media (max-height: 710px) {
