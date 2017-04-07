@@ -121,4 +121,38 @@ class User
         return $this->user ? $this->user->login : '';
     }
 
+    public function saveConfig()
+    {
+        $request = $this->builder->request();
+        if(
+            $request->isPost() &&
+            $request->urlPath() === '/save-config/' &&
+            $this->user()
+        )
+        {
+            $email = $request->data('email');
+            $password = $request->data('login');
+
+            if(!empty($email))
+            {
+                $this->user->email = $email;
+            }
+
+            if(!empty($password))
+            {
+                $provider = $this->auth->domain()->provider('domainPassword');
+                $password = $provider->hash($password);
+
+                $this->user->password = $password;
+            }
+
+            count($this->user->getModify()) && $this->user->save();
+
+            echo $request->json([
+                'success' => 'ok'
+            ]);
+            die;
+        }
+    }
+
 }

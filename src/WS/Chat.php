@@ -219,6 +219,13 @@ class Chat implements MessageComponentInterface
 
         if (!empty($msg->to))
         {
+            if($msg->to == $user->id)
+            {
+                $this->clients[$msg->to]->send($this->message('Нельзя отправить сообщение самому себе', self::STATUS_ERROR));
+
+                return;
+            }
+
             $this->clients[$msg->to]->send($this->message($message, self::STATUS_OK, ['class' => 'private']));
             $this->clients[$user->id]->send($this->message($message, self::STATUS_OK, ['class' => 'private-own']));
 

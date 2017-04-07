@@ -90,6 +90,10 @@ $(function () {
             'data': data,
             'type': 'POST',
             'success': function (data) {
+                $('.alert-config-success').show();
+                setTimeout(function () {
+                    $('.alert-config-success').hide();
+                }, 1500);
             },
             'error': function (a, b) {
                 console.dir(a);

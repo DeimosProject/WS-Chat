@@ -53,4 +53,26 @@ class Builder extends \Deimos\Builder\Builder
         }, __METHOD__);
     }
 
+    /**
+     * @return \Deimos\Helper\Helper
+     */
+    public function helper()
+    {
+        return $this->once(function ()
+        {
+            return new \Deimos\Helper\Helper($this);
+        }, __METHOD__);
+    }
+
+    /**
+     * @return \Deimos\Request\Request
+     */
+    public function request()
+    {
+        return $this->once(function ()
+        {
+            return new \Deimos\Request\Request($this->helper());
+        }, __METHOD__);
+    }
+
 }

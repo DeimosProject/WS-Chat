@@ -9,7 +9,8 @@
   "require": {
     "cboden/Ratchet": "~0.3",
     "deimos/orm": "~2.0",
-    "deimos/auth": "~0.0"
+    "deimos/auth": "~0.0",
+    "deimos/request": "~1.0"
   },
   "autoload": {
     "psr-4": {

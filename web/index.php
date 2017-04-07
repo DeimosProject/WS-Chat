@@ -7,6 +7,9 @@
 
     $user = new \Deimos\WS\User();
     $ids = $user->chatId();
+
+    $user->saveConfig();
+
     $version = 3;
 ?><!DOCTYPE html>
 <html>
@@ -22,19 +25,33 @@
         <div class="row">
             <div class="col-md-10">
                 <header class="login-form">
-                    <span>Пользователь&nbsp;</span>
                     <?php
                     if ($user->user()) {
                     ?>
+                        <span>Пользователь&nbsp;</span>
                         <span><b title="Settings" class="user-config-btn" data-toggle="modal" data-target="#user-settings-modal"> &lap; <?php echo $user->getLogin(); ?> &gap;</b></span>
                     <?php
                     } else {
                     ?>
 
                     <form action="/" method="POST">
-                        <span><input name="login" placeholder="user name" id="user"></span>
-                        <span><input name="password" placeholder="password" id="user"></span>
-                        <span><button id="ok">Ок</button></span>
+                        <div class="input-group col-xs-12">
+                            <div class="col-sm-5 xol-xs-4">
+                                <div class="row">
+                                    <input class="form-control" name="login" placeholder="user name" id="user">
+                                </div>
+                            </div>
+                            <div class="col-sm-5 col-xs-4">
+                                <div class="row">
+                                    <input class="form-control" name="password" type="password" placeholder="password" id="password">
+                                </div>
+                            </div>
+                            <div class="col-sm-2 col-xs-4">
+                                <div class="row">
+                                    <button class="form-control btn-warning" id="ok">Ок</button>
+                                </div>
+                            </div>
+                        </div>
                     </form>
 
                     <?php } ?>
@@ -52,7 +69,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-2" id="users">
+            <div class="col-md-2 hidden-xs hidden-sm" id="users">
                 <div class="row">
                     <div class="header">Пользователи онлайн:</div>
                     <div class="list"></div>
@@ -61,6 +78,7 @@
             <div class="clearfix"></div>
         </div>
     </div>
+    <?php if ($user->user()) { ?>
     <div id="user-settings-modal" tabindex="-1" role="dialog" class="modal fade">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
@@ -70,17 +88,42 @@
                 </div>
                 <div class="modal-body">
                     <div id="user-config-modal-wrapper">
-                        <div class="input-group">
-                            <input class="form-control" name="email">
+                        <div class="col-xs-12">
+                            <div class="col-md-6">
+                                <div class="input-group">
+                                    <span class="">Email</span>
+                                    <input class="form-control data" name="email" value="<?php echo $user->user()->email; ?>">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="input-group">
+                                    <span class="">Password</span>
+                                    <input class="form-control data" type="password" name="password" autocomplete="off" value="">
+                                </div>
+                            </div>
+                            <div class="clearfix"></div>
+                            <hr>
+                            <span class="save btn btn-success">Save</span>
                         </div>
                     </div>
+                    <div class="clearfix"></div>
+                    <div class="alert-block">
+                        <div class="alert-config-success alert alert-success alert-dismissible hide" role="alert">
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                            <div>Success!</div>
+                        </div>
+                    </div>
+                    <div class="clearfix"></div>
                 </div>
                 <div class="modal-footer"></div>
             </div>
         </div>
     </div>
+    <?php } ?>
 </div>
-<script src="//code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha256-/SIrNqv8h6QGKDuNoLGA4iret+kyesCkHGzVUUV0shc=" crossorigin="anonymous"></script>
+<script src="//code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
 <script src="/js/chat.js?v<?=$version?>"></script>
 <script src="/bootstrap/js/bootstrap.min.js"></script>
 </body>
