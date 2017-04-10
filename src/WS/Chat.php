@@ -3,7 +3,6 @@
 namespace Deimos\WS;
 
 use Deimos\Secure\Secure;
-use Deimos\WS\Models\UsersChatId;
 use Ratchet\ConnectionInterface;
 use Ratchet\MessageComponentInterface;
 
@@ -19,12 +18,13 @@ class Chat implements MessageComponentInterface
     const DATA_TYPE_SETUP   = 'setup';
 
     /**
-     * @var \Ratchet\WebSocket\Version\RFC6455\Connection[]
+     * @var \SplObjectStorage
      */
-    protected $clients = [];
+    protected $clients;
 
     /**
-     * @var \Deimos\WS\Models\User[]
+     * <b>$this->users[$user->id][$conn->resourceId] = [$conn, $user];</b>
+     * @var array
      */
     protected $users = [];
 
@@ -58,6 +58,8 @@ class Chat implements MessageComponentInterface
     {
         $this->builder = \Deimos\WS\ObjectsCache::$storage['builder'];
 
+        $this->clients = new \SplObjectStorage();
+
         $this->orm = $this->builder->orm();
     }
 
@@ -70,10 +72,11 @@ class Chat implements MessageComponentInterface
      */
     public function onOpen(ConnectionInterface $conn)
     {
+        $request = $conn->WebSocket->request;
         /**
          * @var $conn \Ratchet\WebSocket\Version\RFC6455\Connection
          */
-        $user = $this->getUser($conn->WebSocket->request);
+        $user = $this->getUser($request);
         echo __FUNCTION__ . PHP_EOL;
 
         if (empty($user->id))
@@ -83,20 +86,21 @@ class Chat implements MessageComponentInterface
             return;
         }
 
-        if (isset($this->users[$user->id]))
-        {
-            $conn->send($this->message('Разрешена только одна вкладка', self::STATUS_WARNING));
-
-            return;
-        }
-
         $conn->send($this->message('', self::STATUS_OK, [
             'type'     => self::DATA_TYPE_SETUP,
-            'messages' => [], // TODO
+            'messages' => $this->builder->orm()
+                ->repository('chat')
+                ->join(['u' => 'users'])
+                ->on('chat.userId', 'u.id')
+                ->select('text', 'time', 'login')
+                ->orderBy('time', 'DESC')
+                ->limit(50)
+                ->find(false)
         ]));
 
-        $this->users[$user->id]   = $user;
-        $this->clients[$user->id] = $conn;
+        $this->users[$user->id][$conn->resourceId] = [$conn, $user];
+
+        $this->clients->attach($conn);
 
         $this->renewUsers();
     }
@@ -107,12 +111,17 @@ class Chat implements MessageComponentInterface
     protected function renewUsers()
     {
         $users = [];
-        foreach ($this->users as $u) {
-            $users[] = [
-                'id' => $u->id,
-                'login' => $u->login,
-                'image' => md5('' . $u->email), // TODO
-            ];
+        foreach ($this->users as $user) {
+            $u = current($user);
+
+            if(isset($u[1]))
+            {
+                $users[] = [
+                    'id'    => $u[1]->id,
+                    'login' => $u[1]->login,
+                    'image' => md5('' . $u[1]->email),
+                ];
+            }
         }
 
         $message = $this->message('', self::STATUS_OK, [
@@ -138,13 +147,19 @@ class Chat implements MessageComponentInterface
         $user = $this->getUser($conn->WebSocket->request);
         echo __FUNCTION__ . PHP_EOL;
 
-//        $this->writeLog('close connection (' . $conn->remoteAddress . ' - ' . $conn->resourceId . ')', 'login.log');
+        if($user)
+        {
+            unset($this->users[$user->id][$conn->resourceId]);
+            $this->clients->detach($conn);
 
-        // The connection is closed, remove it, as we can no longer send it messages
-        unset($this->clients[$user->id]);
-        unset($this->users[$user->id]);
+            $this->renewUsers();
 
-        $this->renewUsers();
+            if(empty($this->users[$user->id])) {
+
+                $user->webSocketCookie = '';
+                $user->save();
+            }
+        }
 
         echo "Connection {$conn->resourceId} has disconnected\n";
     }
@@ -185,14 +200,14 @@ class Chat implements MessageComponentInterface
 
         $msg = json_decode($msg);
 
-        if (json_last_error() || empty($msg->text))
+        if (json_last_error() || empty($msg->text) || mb_strlen($msg->text) > 254)
         {
             return;
         }
 
         if (!empty($msg->to))
         {
-            if (empty($this->clients[$msg->to]))
+            if (empty($this->users[$msg->to])) // если тот, кому послали не онлайн
             {
                 return;
             }
@@ -226,11 +241,23 @@ class Chat implements MessageComponentInterface
                 return;
             }
 
-            $this->clients[$msg->to]->send($this->message($message, self::STATUS_OK, ['class' => 'private']));
-            $this->clients[$user->id]->send($this->message($message, self::STATUS_OK, ['class' => 'private-own']));
+            foreach ($this->users[$msg->to] as $connection) {
+                $connection[0]->send($this->message($message, self::STATUS_OK, ['class' => 'private']));
+            }
+            foreach ($this->users[$msg->id] as $connection)
+            {
+                $connection[0]->send($this->message($message, self::STATUS_OK, ['class' => 'private-own']));
+            }
 
             return;
         }
+
+        $this->builder->orm()
+            ->create('chat', [
+                'userId' => $user->id,
+                'text' => $msg->text,
+                'time' => date('Y-m-d H:i:s')
+            ]);
 
         foreach ($this->clients as $client)
         {
@@ -254,9 +281,10 @@ class Chat implements MessageComponentInterface
         $secure = new Secure();
         $token = $secure->decrypt($request->getCookie('wsToken'));
 
-        $id = (int)(new Secure())->decrypt($token);
+        list($token, $x) = explode('-', $token);
+
         return $this->orm->repository('user')
-            ->where('id', $id)
+            ->where('id', (int)$token)
             ->findOne();
     }
 
@@ -277,6 +305,7 @@ class Chat implements MessageComponentInterface
 
         if(!empty($conn->spam) && $conn->spam < 2)
         {
+            usleep(500000);
             $conn->send($this->message('Спам не приветствуется. Подождите немного', self::STATUS_WARNING));
             $conn->spam = 2;
         }
@@ -285,7 +314,6 @@ class Chat implements MessageComponentInterface
             $conn->spam = 1;
             return true;
         }
-
 
         return false;
     }

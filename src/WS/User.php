@@ -67,23 +67,30 @@ class User
 
         if($user && $user->id)
         {
-            $secure = new Secure();
-            $token = $secure->encrypt($user->id);
+            $token = $user->webSocketCookie;
+            if(empty($user->webSocketCookie))
+            {
+                $token  = $user->id . '-' . \random_int(100000, 999999);
+                $user->webSocketCookie = $token;
+                $user->save();
+            }
 
             $this->builder->cookie()->set('wsToken', $token);
         }
 
-        return $user;
+        header('Location: /');
+        die;
     }
 
     public function user()
     {
-        return $this->auth->domain()->user();
+        $user = $this->auth->domain()->user();
+        return $user ?? $this->checkUser();
     }
 
     protected function checkUser()
     {
-        $user = $this->user();
+        $user = $this->auth->domain()->user();
 
         if(!$user && isset($_POST['login'], $_POST['password']))
         {
@@ -91,6 +98,7 @@ class User
         }
 
         $this->user = $user;
+        return $this->user;
     }
 
     /**
@@ -113,12 +121,16 @@ class User
         return [];
     }
 
-    /**
-     * @return string
-     */
-    public function getLogin()
+    public function logout()
     {
-        return $this->user ? $this->user->login : '';
+        $request = $this->builder->request();
+        if(trim($request->urlPath(), '/') === 'logout')
+        {
+            $this->builder->cookie()->remove('wsToken');
+            $this->auth->domain()->provider('domainSession')->forget();
+            header('Location: /');
+            die;
+        }
     }
 
     public function saveConfig()
@@ -126,16 +138,17 @@ class User
         $request = $this->builder->request();
         if(
             $request->isPost() &&
-            $request->urlPath() === '/save-config/' &&
+            trim($request->urlPath(), '/') === 'save-config' &&
             $this->user()
         )
         {
+            $user = $this->user();
             $email = $request->data('email');
             $password = $request->data('login');
 
             if(!empty($email))
             {
-                $this->user->email = $email;
+                $user->email = $email;
             }
 
             if(!empty($password))
@@ -143,10 +156,10 @@ class User
                 $provider = $this->auth->domain()->provider('domainPassword');
                 $password = $provider->hash($password);
 
-                $this->user->password = $password;
+                $user->password = $password;
             }
 
-            count($this->user->getModify()) && $this->user->save();
+            count($user->getModify()) && $user->save();
 
             echo $request->json([
                 'success' => 'ok'

@@ -38,6 +38,7 @@ $(function () {
 
     function Users(response) {
         var html = '<ul>';
+        var sendToOptions = '';
 
         sendTo.html('<option value="0">Отправить всем</option>');
         response.users.forEach(function (item, i) {
@@ -45,18 +46,35 @@ $(function () {
                 item.image = '';
             }
             html += '<li class="send-to-user" data-id="' + item.id + '"><img src="//secure.gravatar.com/avatar/' + item.image + '?s=32"><span>' + item.login + '</span></li>';
-            sendTo.append('<option value="' + item.id + '">' + item.login + '</option>');
+            if(sendTo.data('user-id') == item.id)
+            {
+                return;
+            }
+            sendToOptions += '<option value="' + item.id + '">' + item.login + '</option>';
         });
         html += '<ul>';
 
+        sendTo.append(sendToOptions);
         $('#users').find('.list').html(html);
     }
 
     function Setup(response) {
         if (response.hasOwnProperty('messages')) {
-            response.messages.forEach(function (item, i) {
-                Message(item);
-            });
+            var messages = response.messages;
+            var myLogin = $('header.login-form').data('login');
+            for (var i = messages.length; i > 0; i--) {
+                if (messages.hasOwnProperty(i)) {
+                    var data = { };
+                    var item = messages[i];
+                    data.text = '<b>&lap; ' + item.login + ' &gap; </b> <i> ' + item.time + '</i>' + item.text;
+                    data.status = '';
+                    data.class = '';
+                    if(item.login == myLogin) {
+                        data.class = 'own';
+                    }
+                    Message(data);
+                }
+            }
         }
     }
 
@@ -76,6 +94,13 @@ $(function () {
                 $this.attr('disabled', false);
                 message.attr('disabled', false);
             }, 500);
+        }
+    });
+
+    message.keydown(function(e) {
+        if(e.keyCode === 13)
+        {
+            $('#send').click();
         }
     });
 

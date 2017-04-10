@@ -6,30 +6,37 @@
     \Deimos\WS\ObjectsCache::$storage['builder'] = new \Deimos\WS\Builder();
 
     $user = new \Deimos\WS\User();
-    $ids = $user->chatId();
 
     $user->saveConfig();
+    $user->logout();
 
-    $version = 3;
+    $version = 5;
 ?><!DOCTYPE html>
 <html>
 <head>
     <title>Deimos chat</title>
-    <link href="/css/chat.css?v<?=$version?>" rel="stylesheet"/>
     <link href="/bootstrap/css/bootstrap.min.css?v<?=$version?>" rel="stylesheet"/>
     <link href="/bootstrap/css/bootstrap-theme.min.css?v<?=$version?>" rel="stylesheet"/>
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"/>
+    <link href="/css/chat.css?v<?=$version?>" rel="stylesheet"/>
 </head>
 <body>
 <div class="wrapper">
     <div class="container">
         <div class="row">
             <div class="col-md-10">
-                <header class="login-form">
+                <header class="login-form" data-login="<?=$user->user() ? $user->user()->login : ''; ?>">
                     <?php
                     if ($user->user()) {
                     ?>
                         <span>Пользователь&nbsp;</span>
-                        <span><b title="Settings" class="user-config-btn" data-toggle="modal" data-target="#user-settings-modal"> &lap; <?php echo $user->getLogin(); ?> &gap;</b></span>
+                        <span title="<?= $user->user()->login; ?>" class="btn user-config-btn">
+                            <img src="//secure.gravatar.com/avatar/<?= md5('' . $user->user()->email); ?>?s=24">
+                        </span>
+                        <div class="pull-right config-group">
+                            <i class="btn fa fa-gears" data-toggle="modal" data-target="#user-settings-modal"></i>
+                        </div>
+                        <div class="clearfix"></div>
                     <?php
                     } else {
                     ?>
@@ -63,7 +70,7 @@
                     <div class="message-area input-group">
                         <div class="form-control no-padding">
                             <input class="form-control" disabled="disabled" maxlength="50" id="message" name="message">
-                            <select class="form-control" id="send-to"></select>
+                            <select data-user-id="<?=$user->user()->id ?? 0;?>" class="form-control" id="send-to"></select>
                         </div>
                         <span class="input-group-addon btn btn-success" id="send">Send message</span>
                     </div>
@@ -103,12 +110,17 @@
                             </div>
                             <div class="clearfix"></div>
                             <hr>
+                            <div class="col-xs-6">
                             <span class="save btn btn-success">Save</span>
+                            </div>
+                            <div class="col-xs-6">
+                                <a class="btn btn-warning" href="/logout/">Logout</a>
+                            </div>
                         </div>
                     </div>
                     <div class="clearfix"></div>
                     <div class="alert-block">
-                        <div class="alert-config-success alert alert-success alert-dismissible hide" role="alert">
+                        <div class="alert-config-success alert alert-success alert-dismissible" style="display: none" role="alert">
                             <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                                 <span aria-hidden="true">&times;</span>
                             </button>
