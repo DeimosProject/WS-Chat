@@ -1,5 +1,7 @@
 <?php
 
 return [
-    'host' => 'ws://ws2.localhost:8080'
+    'schema' => 'ws',
+    'domain' => 'ws2.localhost',
+    'port' => 8080
 ];

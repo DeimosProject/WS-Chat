@@ -44,7 +44,10 @@ class User
 
     public function getWsHost()
     {
-        return $this->config->get('ws')->get('host');
+        $ws = $this->config->get('ws');
+        return $ws->get('schema', 'ws') . '://'
+            . $ws->get('domain', 'ws2.localhost')
+            . ':' . $ws->get('port', 8080);
     }
 
     public function auth($login, $pass)

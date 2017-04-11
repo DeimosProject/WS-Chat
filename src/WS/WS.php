@@ -10,8 +10,18 @@ class WS
 {
     protected $server;
 
-    public function run($port = 8080, $address = '0.0.0.0')
+    public function run($port = null, $address = null)
     {
+        $config = (new Builder())->config()->get('ws');
+        if($port === null)
+        {
+            $port = $config->get('port', '8080');
+        }
+        if($address === null)
+        {
+            $address = $config->get('domain', '0.0.0.0');
+        }
+
         $ws = new WsServer(new Chat);
         $ws->disableVersion(0); // old, bad, protocol version
 
