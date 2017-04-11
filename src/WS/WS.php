@@ -15,11 +15,11 @@ class WS
         $config = (new Builder())->config()->get('ws');
         if($port === null)
         {
-            $port = $config->get('port', '8080');
+            $port = $config->get('server.port', '8080');
         }
         if($address === null)
         {
-            $address = $config->get('domain', '0.0.0.0');
+            $address = $config->get('server.domain', '0.0.0.0');
         }
 
         $ws = new WsServer(new Chat);

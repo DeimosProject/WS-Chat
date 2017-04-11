@@ -45,9 +45,9 @@ class User
     public function getWsHost()
     {
         $ws = $this->config->get('ws');
-        return $ws->get('schema', 'ws') . '://'
-            . $ws->get('domain', 'ws2.localhost')
-            . ':' . $ws->get('port', 8080);
+        return $ws->get('client.schema', 'ws') . '://'
+            . $ws->get('client.domain', 'ws2.localhost')
+            . ':' . $ws->get('client.port', 8080);
     }
 
     public function auth($login, $pass)
@@ -83,7 +83,7 @@ class User
             }
 
             $this->builder->cookie()->set('wsToken', $token, [
-                \Deimos\Cookie\Cookie::OPTION_DOMAIN => $this->config->get('cookie')->get('domain')
+                \Deimos\Cookie\Cookie::OPTION_DOMAIN => '.' . $this->config->get('cookie')->get('domain')
             ]);
         }
 

@@ -1,7 +1,13 @@
 <?php
 
 return [
-    'schema' => 'ws',
-    'domain' => 'ws2.localhost',
-    'port' => 8080
+    'client' => [
+        'schema' => 'ws',
+        'domain' => 'ws2.localhost',
+        'port' => 8080
+    ],
+    'server' => [
+        'domain' => 'ws2.localhost',
+        'port' => 8080
+    ],
 ];
