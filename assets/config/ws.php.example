@@ -1,0 +1,5 @@
+<?php
+
+return [
+    'host' => 'ws://ws2.localhost:8080'
+];
