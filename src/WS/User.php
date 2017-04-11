@@ -6,7 +6,6 @@ use Deimos\Auth\Auth;
 use Deimos\Auth\Provider\Type\Password;
 use Deimos\Config\Config;
 use Deimos\ORM\ORM;
-use Deimos\Secure\Secure;
 
 class User
 {
@@ -43,6 +42,11 @@ class User
         $this->orm->register('user', Models\User::class);
     }
 
+    public function getWsHost()
+    {
+        return $this->config->get('ws')->get('host');
+    }
+
     public function auth($login, $pass)
     {
         /**
@@ -75,7 +79,9 @@ class User
                 $user->save();
             }
 
-            $this->builder->cookie()->set('wsToken', $token);
+            $this->builder->cookie()->set('wsToken', $token, [
+                \Deimos\Cookie\Cookie::OPTION_DOMAIN => $this->config->get('cookie')->get('domain')
+            ]);
         }
 
         header('Location: /');

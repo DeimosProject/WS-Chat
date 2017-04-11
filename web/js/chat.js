@@ -5,11 +5,12 @@ $(function () {
     var sendTo = $('#send-to');
     var userConfig = $('#user-config-modal-wrapper');
     var countErrors = 0;
+    var wsHost = $('body').data('ws-domain');
 
     inner.data('counter', 0);
 
     function createConnection() {
-        conn = new WebSocket('ws://ws2.localhost:8080');
+        conn = new WebSocket(wsHost);
 
         init();
     }
