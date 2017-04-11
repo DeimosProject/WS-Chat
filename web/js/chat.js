@@ -4,6 +4,7 @@ $(function () {
     var inner = $('#messages').find('.inner');
     var sendTo = $('#send-to');
     var userConfig = $('#user-config-modal-wrapper');
+    var countErrors = 0;
 
     inner.data('counter', 0);
 
@@ -39,13 +40,14 @@ $(function () {
     function Users(response) {
         var html = '<ul>';
         var sendToOptions = '';
+        var myLogin = $('header.login-form').data('login');
 
         sendTo.html('<option value="0">Отправить всем</option>');
         response.users.forEach(function (item, i) {
             if (!item.hasOwnProperty('image')) {
                 item.image = '';
             }
-            html += '<li class="send-to-user" data-id="' + item.id + '"><img src="//secure.gravatar.com/avatar/' + item.image + '?s=32"><span>' + item.login + '</span></li>';
+            html += '<li class="' + (myLogin == item.login ? '' : 'send-to-user') + '" data-id="' + item.id + '"><img src="//secure.gravatar.com/avatar/' + item.image + '?s=32"><span>' + item.login + '</span></li>';
             if(sendTo.data('user-id') == item.id)
             {
                 return;
@@ -62,12 +64,12 @@ $(function () {
         if (response.hasOwnProperty('messages')) {
             var messages = response.messages;
             var myLogin = $('header.login-form').data('login');
-            for (var i = messages.length; i > 0; i--) {
+            for (var i = messages.length; i >= 0; i--) {
                 if (messages.hasOwnProperty(i)) {
                     var data = { };
                     var item = messages[i];
                     data.text = '<b>&lap; ' + item.login + ' &gap; </b> <i> ' + item.time + '</i>' + item.text;
-                    data.status = '';
+                    data.status = 'history';
                     data.class = '';
                     if(item.login == myLogin) {
                         data.class = 'own';
@@ -137,6 +139,10 @@ $(function () {
 
     function init() {
         conn.onopen = function (e) {
+            countErrors = 0;
+            setTimeout(function () {
+                $('msg.error.deleted').hide(300);
+            }, 500);
             message.attr('disabled', false);
             var msg = {
                 'status': 'info',
@@ -148,15 +154,33 @@ $(function () {
 
         conn.onclose = function (e) {
             message.attr('disabled', 'disabled');
+            var sec = ['секунда', 'секунды', 'секунд'];
+            var seconds = (countErrors + 1) * 3;
+            var c = seconds % 100;
+            if(c >= 11 && c <= 19) {
+                c = sec[2];
+            } else {
+                c = c % 10;
+                switch (c) {
+                    case 1: c = sec[0]; break;
+                    case 2:
+                    case 3:
+                    case 4: c = sec[1]; break;
+                    default: c = sec[2];
+                }
+            }
+
+            countErrors += 1;
+
             var msg = {
                 'status': 'error',
                 'class': 'deleted',
-                'text': 'Произошла ошибка. Следующая попытка восстановления соединения через 3 секунды'
+                'text': 'Произошла ошибка. Следующая попытка восстановления соединения через ' + seconds + ' ' + c
             };
             Message(msg);
             setTimeout(function () {
                 createConnection();
-            }, 3000);
+            }, (seconds) * 1000);
         };
 
         conn.onmessage = function (e) {

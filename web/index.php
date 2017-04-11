@@ -10,7 +10,7 @@
     $user->saveConfig();
     $user->logout();
 
-    $version = 5;
+    $version = 0;
 ?><!DOCTYPE html>
 <html>
 <head>

@@ -281,7 +281,14 @@ class Chat implements MessageComponentInterface
         $secure = new Secure();
         $token = $secure->decrypt($request->getCookie('wsToken'));
 
-        list($token, $x) = explode('-', $token);
+        $token = explode('-', $token);
+
+        if(empty($token[1]))
+        {
+            return null;
+        }
+
+        $token = $token[0];
 
         return $this->orm->repository('user')
             ->where('id', (int)$token)
