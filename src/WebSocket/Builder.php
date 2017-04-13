@@ -143,7 +143,7 @@ class Builder extends \Deimos\Builder\Builder
     /**
      * @return Router
      */
-    protected function router()
+    public function router()
     {
         return $this->once(function ()
         {
@@ -177,7 +177,10 @@ class Builder extends \Deimos\Builder\Builder
 
             $slice = $this->config()->get('flow');
 
-            $configure = new Configure();
+            $configure     = new Configure();
+            $defaultConfig = new \Deimos\Flow\DefaultConfig();
+            $di            = new DI($this, $defaultConfig);
+            $configure->di($di);
 
             $flow = (new Flow($configure))
                 ->setCompileDir($this->rootDir . $slice->getData('compile', 'assets/cache'))

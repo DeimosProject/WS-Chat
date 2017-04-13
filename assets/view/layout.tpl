@@ -23,7 +23,7 @@
                         </div>
                         <div class="clearfix"></div>
                     {else}
-                        <form action="/" method="POST">
+                        <form action="{'login'|route}" method="POST">
                             <div class="input-group col-xs-12">
                                 <div class="col-sm-5 xol-xs-4">
                                     <div class="row">
@@ -100,7 +100,7 @@
                                 <span class="save btn btn-success">Save</span>
                             </div>
                             <div class="col-xs-6">
-                                <a class="btn btn-warning" href="/logout/">Logout</a>
+                                <a class="btn btn-warning" href="{'logout'|route}">Logout</a>
                             </div>
                         </div>
                     </div>
