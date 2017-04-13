@@ -1,8 +1,0 @@
-<?php
-
-return [
-    'adapter' => 'mysql',
-    'database' => 'deimosWSChat',
-    'username' => 'deimos',
-    'password' => 'deimos'
-];

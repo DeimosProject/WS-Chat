@@ -1,6 +1,6 @@
 <?php
 
-namespace Deimos\WS;
+namespace Deimos\WebSocket;
 
 use Deimos\Auth\Auth;
 use Deimos\Auth\Provider\Type\Password;
@@ -30,24 +30,21 @@ class User
      */
     protected $builder;
 
-    public function __construct()
+    public function __construct(Builder $builder)
     {
-        $this->builder = \Deimos\WS\ObjectsCache::$storage['builder'];
-
-        $this->config = $this->builder->config();
-
-        $this->orm = $this->builder->orm();
-
-        $this->auth = new Auth($this->orm, $this->config->get('auth'));
-        $this->orm->register('user', Models\User::class);
+        $this->builder = $builder;
+        $this->config  = $this->builder->config();
+        $this->orm     = $this->builder->orm();
+        $this->auth    = new Auth($this->orm, $this->config->get('auth'));
     }
 
     public function getWsHost()
     {
-        $ws = $this->config->get('ws');
-        return $ws->get('client.schema', 'ws') . '://'
-            . $ws->get('client.domain', 'ws2.localhost')
-            . ':' . $ws->get('client.port', 8080);
+        $ws = $this->config->get('webSocket');
+
+        return $ws->getRequired('client.scheme') . '://'
+            . $ws->getRequired('client.host')
+            . ':' . $ws->getRequired('client.port');
     }
 
     public function auth($login, $pass)

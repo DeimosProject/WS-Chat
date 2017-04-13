@@ -4,6 +4,7 @@ composer.lock
 .idea/
 log/
 build/
+assets/cache
 storage/
 assets/compile/
 file.db

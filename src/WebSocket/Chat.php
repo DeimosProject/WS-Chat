@@ -1,6 +1,6 @@
 <?php
 
-namespace Deimos\WS;
+namespace Deimos\WebSocket;
 
 use Deimos\Secure\Secure;
 use Ratchet\ConnectionInterface;
@@ -39,28 +39,13 @@ class Chat implements MessageComponentInterface
     protected $builder;
 
     /**
-     * @param string $message
-     * @param string $log
-     */
-    protected function writeLog($message, $log = 'messages.log')
-    {
-        $filename = ROOT_DIR . '/log/' . $log;
-
-        is_file($filename) || touch($filename) || die('log write error!');
-
-        file_put_contents($filename, date('Y-m-d H:i:s') . PHP_EOL . $message . PHP_EOL, FILE_APPEND);
-    }
-
-    /**
      * Chat constructor.
      */
-    public function __construct()
+    public function __construct(Builder $builder)
     {
-        $this->builder = \Deimos\WS\ObjectsCache::$storage['builder'];
-
+        $this->builder = $builder;
         $this->clients = new \SplObjectStorage();
-
-        $this->orm = $this->builder->orm();
+        $this->orm     = $this->builder->orm();
     }
 
     /**
@@ -274,7 +259,7 @@ class Chat implements MessageComponentInterface
     /**
      * @param $request \Guzzle\Http\Message\EntityEnclosingRequest
      *
-     * @return \Deimos\WS\Models\User
+     * @return Models\User
      */
     public function getUser($request)
     {
