@@ -265,7 +265,7 @@ class Application implements MessageComponentInterface
     public function getUser($request)
     {
         $secure = new Secure();
-        $token = $secure->decrypt($request->getCookie('wsToken'));
+        $token  = $secure->decrypt($request->getCookie('token'));
 
         $token = explode('-', $token);
 

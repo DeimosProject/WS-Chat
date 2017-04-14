@@ -7,11 +7,11 @@ SET NAMES utf8mb4;
 
 CREATE TABLE `users` (
   `id`        INT(11)     NOT NULL AUTO_INCREMENT,
-  `email`     VARCHAR(50) NOT NULL,
+  `email`     VARCHAR(50) NULL,
   `login`     VARCHAR(50) NOT NULL,
   `password`  VARCHAR(60) NOT NULL,
+  `token`     CHAR(32)    NULL,
   `createdAt` TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `token`     VARCHAR(32) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`)
 )
   ENGINE = InnoDB

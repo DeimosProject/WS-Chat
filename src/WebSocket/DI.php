@@ -24,6 +24,21 @@ class DI extends \Deimos\Flow\DefaultContainer
     {
         parent::configure();
 
+        $this->callback('asset', function ($path)
+        {
+            $realPath = $this->builder->path('web' . $path);
+
+            if ($realPath)
+            {
+                return
+                    $path .
+                    (false === strpos($path, '?') ? '?' : '&') .
+                    filemtime($realPath);
+            }
+
+            return $path;
+        });
+
         $this->callback('route', function ($path, array $attributes = [])
         {
             return route('fpm.' . $path, $attributes);

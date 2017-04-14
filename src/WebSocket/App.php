@@ -15,4 +15,12 @@ class App extends Processor
         return new Controller\General($this->builder);
     }
 
+    /**
+     * @return Controller\User
+     */
+    protected function buildUser()
+    {
+        return new Controller\User($this->builder);
+    }
+
 }

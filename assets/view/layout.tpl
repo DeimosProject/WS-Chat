@@ -2,10 +2,10 @@
 <html>
 <head>
     <title>Deimos Chat</title>
-    <link href="/bootstrap/css/bootstrap.min.css?v{$version}" rel="stylesheet"/>
-    <link href="/bootstrap/css/bootstrap-theme.min.css?v{$version}" rel="stylesheet"/>
     <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"/>
-    <link href="/css/chat.css?v{$version}" rel="stylesheet"/>
+    <link href="{'/bootstrap/css/bootstrap.min.css'|asset}" rel="stylesheet"/>
+    <link href="{'/bootstrap/css/bootstrap-theme.min.css'|asset}" rel="stylesheet"/>
+    <link href="{'/css/chat.css'|asset}" rel="stylesheet"/>
 </head>
 <body data-ws-domain="{$scheme}://{$host}:{$port}">
 <div class="wrapper">
@@ -124,7 +124,7 @@
 </div>
 <script src="//code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
         crossorigin="anonymous"></script>
-<script src="/js/chat.js?v{$version}"></script>
-<script src="/bootstrap/js/bootstrap.min.js?v{$version}"></script>
+<script src="{'/js/chat.js'|asset}"></script>
+<script src="{'/bootstrap/js/bootstrap.min.js'|asset}"></script>
 </body>
 </html>
