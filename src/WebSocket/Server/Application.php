@@ -1,12 +1,13 @@
 <?php
 
-namespace Deimos\WebSocket;
+namespace Deimos\WebSocket\Server;
 
 use Deimos\Secure\Secure;
+use Deimos\WebSocket\Builder;
 use Ratchet\ConnectionInterface;
 use Ratchet\MessageComponentInterface;
 
-class Chat implements MessageComponentInterface
+class Application implements MessageComponentInterface
 {
     const STATUS_OK      = 'ok';
     const STATUS_ERROR   = 'error';

@@ -34,6 +34,14 @@ class Builder extends \Deimos\Builder\Builder
     }
 
     /**
+     * @return string|bool
+     */
+    public function path($path)
+    {
+        return realpath($this->rootDir . $path);
+    }
+
+    /**
      * @return Database
      */
     public function database()
@@ -88,7 +96,7 @@ class Builder extends \Deimos\Builder\Builder
         {
             return new Config(
                 $this->helper(),
-                $this->rootDir . 'assets/config'
+                $this->path('assets/config')
             );
         }, __METHOD__);
     }
@@ -136,7 +144,7 @@ class Builder extends \Deimos\Builder\Builder
     {
         return $this->once(function ()
         {
-            return new SliceHelper($this->rootDir . 'assets/cache');
+            return new SliceHelper($this->path('assets/cache'));
         }, __METHOD__);
     }
 
@@ -161,7 +169,7 @@ class Builder extends \Deimos\Builder\Builder
         return $this->once(function ()
         {
             $migrate = new Migrate($this->orm());
-            $migrate->setPath($this->rootDir . 'assets/migrations');
+            $migrate->setPath($this->path('assets/migrations'));
 
             return $migrate;
         }, __METHOD__);
@@ -177,14 +185,25 @@ class Builder extends \Deimos\Builder\Builder
 
             $slice = $this->config()->get('flow');
 
-            $configure     = new Configure();
+            $configure = new Configure();
+
+            if ($slice->getData('debug'))
+            {
+                $configure->debugEnable();
+            }
+
+            if ($slice->getData('php'))
+            {
+                $configure->phpEnable();
+            }
+
             $defaultConfig = new \Deimos\Flow\DefaultConfig();
             $di            = new DI($this, $defaultConfig);
             $configure->di($di);
 
             $flow = (new Flow($configure))
-                ->setCompileDir($this->rootDir . $slice->getData('compile', 'assets/cache'))
-                ->setTemplateDir($this->rootDir . $slice->getData('view', 'assets/view'));
+                ->setCompileDir($this->path($slice->getData('compile', 'assets/cache')))
+                ->setTemplateDir($this->path($slice->getData('view', 'assets/view')));
 
             foreach ($slice->getData('assign', []) as $name => $value)
             {

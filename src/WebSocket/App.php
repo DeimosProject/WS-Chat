@@ -8,11 +8,11 @@ class App extends Processor
 {
 
     /**
-     * @return Controller\Chat
+     * @return Controller\General
      */
-    protected function buildChat()
+    protected function buildGeneral()
     {
-        return new Controller\Chat($this->builder);
+        return new Controller\General($this->builder);
     }
 
 }

@@ -7,16 +7,16 @@
     <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"/>
     <link href="/css/chat.css?v{$version}" rel="stylesheet"/>
 </head>
-<body data-ws-domain="{$user->getWsHost()}">
+<body data-ws-domain="{$scheme}://{$host}:{$port}">
 <div class="wrapper">
     <div class="container">
         <div class="row">
             <div class="col-md-10">
-                <header class="login-form" data-login="{if ($user->user())}{$user->user()->login}{/if}">
-                    {if $user->user()}
+                <header class="login-form" data-login="{if $user}{$user->login}{/if}">
+                    {if $user}
                         <span>Пользователь&nbsp;</span>
-                        <span title="{$user->user()->login}" class="btn user-config-btn">
-                                <img src="//secure.gravatar.com/avatar/{$user->user()->email|md5}?s=24">
+                        <span title="{$user->login}" class="btn user-config-btn">
+                                <img src="{$user->avatar()}?s=24">
                             </span>
                         <div class="pull-right config-group">
                             <i class="btn fa fa-gears" data-toggle="modal" data-target="#user-settings-modal"></i>
@@ -52,7 +52,7 @@
                     <div class="message-area input-group">
                         <div class="form-control no-padding">
                             <input class="form-control" disabled="disabled" maxlength="50" id="message" name="message">
-                            <select data-user-id="{$user->user()->id|default:0}" class="form-control"
+                            <select data-user-id="{$user->id|default:0}" class="form-control"
                                     id="send-to"></select>
                         </div>
                         <span class="input-group-addon btn btn-success" id="send">Send message</span>
@@ -68,7 +68,7 @@
             <div class="clearfix"></div>
         </div>
     </div>
-    {if $user->user()}
+    {if $user}
     <div id="user-settings-modal" tabindex="-1" role="dialog" class="modal fade">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
@@ -84,7 +84,7 @@
                                 <div class="input-group">
                                     <span class="">Email</span>
                                     <input class="form-control data" name="email"
-                                           value="{$user->user()->email}">
+                                           value="{$user->email}">
                                 </div>
                             </div>
                             <div class="col-md-6">

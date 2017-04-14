@@ -3,7 +3,7 @@
 namespace Deimos\WebSocket;
 
 use Deimos\Flow\DefaultConfig;
-use Deimos\Router;
+use function Deimos\WebSocket\Controller\route;
 
 class DI extends \Deimos\Flow\DefaultContainer
 {
@@ -26,11 +26,7 @@ class DI extends \Deimos\Flow\DefaultContainer
 
         $this->callback('route', function ($path, array $attributes = [])
         {
-            $route = $this->builder
-                ->router()
-                ->route('fpm.' . $path);
-
-            return Router\route($route, $attributes);
+            return route('fpm.' . $path, $attributes);
         });
     }
 
