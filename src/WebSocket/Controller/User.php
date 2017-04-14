@@ -2,6 +2,7 @@
 
 namespace Deimos\WebSocket\Controller;
 
+use Deimos\Cookie\Cookie;
 use Deimos\WebSocket\Controller;
 
 class User extends Controller
@@ -92,7 +93,10 @@ class User extends Controller
         if ($user)
         {
             $cookie = $this->builder()->cookie();
-            $cookie->remove('token');
+            $cookie->set('token', null, [
+                Cookie::OPTION_DOMAIN => $this->builder()->config()->get('cookie:domain'),
+                Cookie::OPTION_EXPIRE => 0
+            ]);
             provider('domainSession')->forget();
         }
 

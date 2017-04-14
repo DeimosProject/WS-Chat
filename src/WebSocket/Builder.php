@@ -13,6 +13,7 @@ use Deimos\Helper\Helper;
 use Deimos\Migrate\Migrate;
 use Deimos\ORM\ORM;
 use Deimos\Router\Router;
+use Deimos\Session\Session;
 
 class Builder extends \Deimos\Builder\Builder
 {
