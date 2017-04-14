@@ -33,11 +33,11 @@ class Builder extends \Deimos\Builder\Builder
     }
 
     /**
-     * @return string|bool
+     * @return string
      */
     public function path($path)
     {
-        return realpath($this->rootDir . $path);
+        return $this->rootDir . $path;
     }
 
     /**
