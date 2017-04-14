@@ -16,3 +16,5 @@ CREATE TABLE `users` (
 )
   ENGINE = InnoDB
   DEFAULT CHARSET = utf8;
+
+ALTER TABLE `users` ADD INDEX(`token`);

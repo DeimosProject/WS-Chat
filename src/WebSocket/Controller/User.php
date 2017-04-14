@@ -39,7 +39,7 @@ class User extends Controller
         {
             provider('domainSession')->persist();
 
-            $this->builder()->cookie()->set('token', $user->token, [
+            $this->builder()->cookie()->set('token', $user->id . '-' . $user->token, [
                 \Deimos\Cookie\Cookie::OPTION_DOMAIN =>
                     $this->builder()->config()->get('cookie:domain')
             ]);

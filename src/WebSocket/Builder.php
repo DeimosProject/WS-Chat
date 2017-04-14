@@ -12,7 +12,6 @@ use Deimos\Flow\Flow;
 use Deimos\Helper\Helper;
 use Deimos\Migrate\Migrate;
 use Deimos\ORM\ORM;
-use Deimos\Request\Request;
 use Deimos\Router\Router;
 
 class Builder extends \Deimos\Builder\Builder

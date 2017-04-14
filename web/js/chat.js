@@ -44,17 +44,16 @@ $(function () {
         var myLogin = $('header.login-form').data('login');
 
         sendTo.html('<option value="0">Отправить всем</option>');
-        response.users.forEach(function (item, i) {
-            if (!item.hasOwnProperty('image')) {
-                item.image = '';
-            }
-            html += '<li class="' + (myLogin == item.login ? '' : 'send-to-user') + '" data-id="' + item.id + '"><img src="//secure.gravatar.com/avatar/' + item.image + '?s=32"><span>' + item.login + '</span></li>';
-            if(sendTo.data('user-id') == item.id)
+
+        $.each(response.users, function (key, item) {
+            html += '<li class="' + (myLogin === item.login ? '' : 'send-to-user') + '" data-id="' + item.id + '"><img src="' + item.avatar + '?s=32"><span>' + item.login + '</span></li>';
+            if (sendTo.data('user-id') === item.id)
             {
                 return;
             }
             sendToOptions += '<option value="' + item.id + '">' + item.login + '</option>';
         });
+
         html += '<ul>';
 
         sendTo.append(sendToOptions);
@@ -72,7 +71,7 @@ $(function () {
                     data.text = '<b>&lap; ' + item.login + ' &gap; </b> <i> ' + item.time + '</i>' + item.text;
                     data.status = 'history';
                     data.class = '';
-                    if(item.login == myLogin) {
+                    if (item.login === myLogin) {
                         data.class = 'own';
                     }
                     Message(data);

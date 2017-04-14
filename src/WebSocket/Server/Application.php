@@ -4,6 +4,7 @@ namespace Deimos\WebSocket\Server;
 
 use Deimos\Secure\Secure;
 use Deimos\WebSocket\Builder;
+use Deimos\WebSocket\Models;
 use Ratchet\ConnectionInterface;
 use Ratchet\MessageComponentInterface;
 
@@ -21,13 +22,12 @@ class Application implements MessageComponentInterface
     /**
      * @var \SplObjectStorage
      */
-    protected $clients;
+    protected $connections;
 
     /**
-     * <b>$this->users[$user->id][$conn->resourceId] = [$conn, $user];</b>
      * @var array
      */
-    protected $users = [];
+    protected $users;
 
     /**
      * @var \Deimos\ORM\ORM
@@ -44,35 +44,38 @@ class Application implements MessageComponentInterface
      */
     public function __construct(Builder $builder)
     {
-        $this->builder = $builder;
-        $this->clients = new \SplObjectStorage();
-        $this->orm     = $this->builder->orm();
+        $this->builder     = $builder;
+        $this->orm         = $builder->orm();
+        $this->connections = new \SplObjectStorage();
+        $this->users       = [];
     }
 
     /**
      * When a new connection is opened it will be passed to this method
      *
-     * @param  ConnectionInterface $conn The socket/connection that just connected to your application
+     * @param  ConnectionInterface $connection The socket/connection that just connected to your application
      *
      * @throws \Exception
      */
-    public function onOpen(ConnectionInterface $conn)
+    public function onOpen(ConnectionInterface $connection)
     {
-        $request = $conn->WebSocket->request;
+        $request = $connection->WebSocket->request;
         /**
-         * @var $conn \Ratchet\WebSocket\Version\RFC6455\Connection
+         * @var $connection \Ratchet\WebSocket\Version\RFC6455\Connection
          */
         $user = $this->getUser($request);
-        echo __FUNCTION__ . PHP_EOL;
 
+        /**
+         * @var $connection \Ratchet\WebSocket\Version\RFC6455\Connection
+         */
         if (empty($user->id))
         {
-            $conn->send($this->message('<h2>Сперва залогиньтесь.</h2>'));
+            $connection->send($this->message('<h2>Сперва залогиньтесь.</h2>'));
 
             return;
         }
 
-        $conn->send($this->message('', self::STATUS_OK, [
+        $connection->send($this->message('', self::STATUS_OK, [
             'type'     => self::DATA_TYPE_SETUP,
             'messages' => $this->builder->orm()
                 ->repository('chat')
@@ -84,9 +87,8 @@ class Application implements MessageComponentInterface
                 ->find(false)
         ]));
 
-        $this->users[$user->id][$conn->resourceId] = [$conn, $user];
-
-        $this->clients->attach($conn);
+        $this->connections->attach($connection, $user);
+        $this->users[$user->id][$connection->resourceId] = $connection;
 
         $this->renewUsers();
     }
@@ -97,17 +99,15 @@ class Application implements MessageComponentInterface
     protected function renewUsers()
     {
         $users = [];
-        foreach ($this->users as $user) {
-            $u = current($user);
+        foreach ($this->connections as $connection)
+        {
+            $user = $this->connections[$connection];
 
-            if(isset($u[1]))
-            {
-                $users[] = [
-                    'id'    => $u[1]->id,
-                    'login' => $u[1]->login,
-                    'image' => md5('' . $u[1]->email),
-                ];
-            }
+            $users[$user->id] = [
+                'id'     => $user->id,
+                'login'  => $user->login,
+                'avatar' => $user->avatar(),
+            ];
         }
 
         $message = $this->message('', self::STATUS_OK, [
@@ -115,71 +115,66 @@ class Application implements MessageComponentInterface
             'users' => $users,
         ]);
 
-        foreach ($this->clients as $client)
+        foreach ($this->connections as $client)
         {
             $client->send($message);
         }
     }
 
     /**
-     * This is called before or after a socket is closed (depends on how it's closed).  SendMessage to $conn will not result in an error if it has already been closed.
+     * This is called before or after a socket is closed (depends on how it's closed).  SendMessage to $connection will not result in an error if it has already been closed.
      *
-     * @param  ConnectionInterface $conn The socket/connection that is closing/closed
+     * @param  ConnectionInterface $connection The socket/connection that is closing/closed
      *
      * @throws \Exception
      */
-    public function onClose(ConnectionInterface $conn)
+    public function onClose(ConnectionInterface $connection)
     {
-        $user = $this->getUser($conn->WebSocket->request);
+        $user = $this->getUser($connection->WebSocket->request);
         echo __FUNCTION__ . PHP_EOL;
 
         if($user)
         {
-            unset($this->users[$user->id][$conn->resourceId]);
-            $this->clients->detach($conn);
+            $this->connections->detach($connection);
 
             $this->renewUsers();
-
-            if(empty($this->users[$user->id])) {
-
-                $user->webSocketCookie = '';
-                $user->save();
-            }
         }
 
-        echo "Connection {$conn->resourceId} has disconnected\n";
+        echo "Connection {$connection->resourceId} has disconnected\n";
     }
 
     /**
      * If there is an error with one of the sockets, or somewhere in the application where an Exception is thrown,
      * the Exception is sent back down the stack, handled by the Server and bubbled back up the application through this method
      *
-     * @param  ConnectionInterface $conn
+     * @param  ConnectionInterface $connection
      * @param  \Exception          $e
      *
      * @throws \Exception
      */
-    public function onError(ConnectionInterface $conn, \Exception $e)
+    public function onError(ConnectionInterface $connection, \Exception $e)
     {
         echo __FUNCTION__ . PHP_EOL;
         echo "An error has occurred: {$e->getMessage()}\n";
 
-        $conn->close();
+        var_dump($e);
+
+        $connection->close();
     }
 
     /**
      * Triggered when a client sends data through the socket
      *
-     * @param  \Ratchet\ConnectionInterface $conn The socket/connection that sent the message to your application
-     * @param  string                       $msg  The message received
+     * @param  \Ratchet\ConnectionInterface $connection The socket/connection that sent the message to your application
+     * @param  string                       $msg        The message received
      *
      * @throws \Exception
      */
-    public function onMessage(ConnectionInterface $conn, $msg)
+    public function onMessage(ConnectionInterface $connection, $msg)
     {
-        $request = $conn->WebSocket->request;
+        $request = $connection->WebSocket->request;
 
-        if (!$this->checkTime($conn))
+        if (!$this->checkTime($connection))
         {
             return;
         }
@@ -191,12 +186,9 @@ class Application implements MessageComponentInterface
             return;
         }
 
-        if (!empty($msg->to))
+        if (!empty($msg->to) && empty($this->users[$msg->to])) // если тот, кому послали не онлайн
         {
-            if (empty($this->users[$msg->to])) // если тот, кому послали не онлайн
-            {
-                return;
-            }
+            return;
         }
 
         $user = $this->getUser($request);
@@ -209,7 +201,10 @@ class Application implements MessageComponentInterface
         $login = '';
         if (!empty($msg->to))
         {
-            $login = '<b>&lap; ' . $user->login . ' > ' . $this->users[$msg->to]->login . ' &gap;</b> ';
+            $conn   = current($this->users[$msg->to]);
+            $userTo = $this->connections[$conn];
+
+            $login = '<b>&lap; ' . $user->login . ' > ' . $userTo->login . ' &gap;</b> ';
         }
         else
         {
@@ -220,35 +215,37 @@ class Application implements MessageComponentInterface
 
         if (!empty($msg->to))
         {
-            if($msg->to == $user->id)
+            if ($msg->to === $user->id)
             {
-                $this->clients[$msg->to]->send($this->message('Нельзя отправить сообщение самому себе', self::STATUS_ERROR));
+                current($this->users[$msg->to])->send($this->message('Нельзя отправить сообщение самому себе', self::STATUS_ERROR));
 
                 return;
             }
 
-            foreach ($this->users[$msg->to] as $connection) {
-                $connection[0]->send($this->message($message, self::STATUS_OK, ['class' => 'private']));
-            }
-            foreach ($this->users[$msg->id] as $connection)
+            foreach ($this->users[$msg->to] as $conn)
             {
-                $connection[0]->send($this->message($message, self::STATUS_OK, ['class' => 'private-own']));
+                $conn->send($this->message($message, self::STATUS_OK, ['class' => 'private']));
+            }
+
+            foreach ($this->users[$user->id] as $conn)
+            {
+                $conn->send($this->message($message, self::STATUS_OK, ['class' => 'private-own']));
             }
 
             return;
         }
 
-        $this->builder->orm()
-            ->create('chat', [
-                'userId' => $user->id,
-                'text' => $msg->text,
-                'time' => date('Y-m-d H:i:s')
-            ]);
+        $this->builder->orm()->create('chat', [
+            'userId' => $user->id,
+            'text'   => $msg->text,
+            'time'   => date('Y-m-d H:i:s')
+        ]);
 
-        foreach ($this->clients as $client)
+        foreach ($this->connections as $client)
         {
             $class = [];
-            if ($conn === $client)
+
+            if ($connection === $client)
             {
                 $class = ['class' => 'own'];
             }
@@ -262,49 +259,47 @@ class Application implements MessageComponentInterface
      *
      * @return Models\User
      */
-    public function getUser($request)
+    protected function getUser($request)
     {
-        $secure = new Secure();
-        $token  = $secure->decrypt($request->getCookie('token'));
-
-        $token = explode('-', $token);
+        $tokenCookie = urldecode($request->getCookie('token'));
+        $token       = (new Secure())->decrypt($tokenCookie);
+        $token       = explode('-', $token, 2);
 
         if(empty($token[1]))
         {
             return null;
         }
 
-        $token = $token[0];
-
         return $this->orm->repository('user')
-            ->where('id', (int)$token)
+            ->where('id', (int)$token[0])
+            ->where('token', $token[1])
             ->findOne();
     }
 
     /**
-     * @param  \Ratchet\ConnectionInterface $conn The socket/connection that sent the message to your application
+     * @param  \Ratchet\ConnectionInterface $connection The socket/connection that sent the message to your application
      *
      * @return bool
      */
-    protected function checkTime(&$conn)
+    protected function checkTime(&$connection)
     {
-        $_ = time();
-        if(!isset($conn->time) || (($conn->time + 1) < $_))
+        $currentTime = time();
+        if (!isset($connection->time) || (($connection->time + 1) < $currentTime))
         {
-            $conn->spam = 0;
-            $conn->time = $_;
+            $connection->spam = 0;
+            $connection->time = $currentTime;
             return true;
         }
 
-        if(!empty($conn->spam) && $conn->spam < 2)
+        if (!empty($connection->spam) && $connection->spam < 2)
         {
             usleep(500000);
-            $conn->send($this->message('Спам не приветствуется. Подождите немного', self::STATUS_WARNING));
-            $conn->spam = 2;
+            $connection->send($this->message('Спам не приветствуется. Подождите немного', self::STATUS_WARNING));
+            $connection->spam = 2;
         }
-        else if(empty($conn->spam))
+        else if (empty($connection->spam))
         {
-            $conn->spam = 1;
+            $connection->spam = 1;
             return true;
         }
 
@@ -319,4 +314,5 @@ class Application implements MessageComponentInterface
             'type' => self::DATA_TYPE_MESSAGE
         ], $moreData));
     }
+
 }
