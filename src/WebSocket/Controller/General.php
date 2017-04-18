@@ -17,7 +17,12 @@ class General extends Controller
 
         $flow = $this->builder()->flow();
 
-        return $flow->render('layout');
+        if (user())
+        {
+            return $flow->render('chat');
+        }
+
+        return $flow->render('login');
     }
 
 }
