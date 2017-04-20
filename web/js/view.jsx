@@ -3,25 +3,25 @@ import ReactDOM from "react-dom";
 
 class CommentComponent extends React.Component {
 
-    message(message) {
+    static map(msg) {
 
-        if (message.own) {
-            return <li key={message.id} className="clearfix">
+        if (msg.own) {
+            return <li key={msg.id} className="clearfix">
                 <div className="message-data align-right">
-                    <span className="message-data-time">{message.time}</span> &nbsp; &nbsp;
-                    <span className="message-data-name">{message.login}</span> <i className="fa fa-circle me"> </i>
+                    <span className="message-data-time">{msg.createdAt}</span> &nbsp; &nbsp;
+                    <span className="message-data-name">{msg.login}</span> <i className="fa fa-circle me"> </i>
 
                 </div>
-                <div className="message other-message float-right">{message.message}</div>
+                <div className="message other-message float-right">{msg.message}</div>
             </li>
         }
 
-        return <li key={message.id}>
+        return <li key={msg.id}>
             <div className="message-data">
-                <span className="message-data-name"><i className="fa fa-circle online"> </i> {message.login}</span>
-                <span className="message-data-time">{message.time}</span>
+                <span className="message-data-name"><i className="fa fa-circle online"> </i> {msg.login}</span>
+                <span className="message-data-time">{msg.createdAt}</span>
             </div>
-            <div className="message my-message">{message.message}</div>
+            <div className="message my-message">{msg.message}</div>
         </li>;
 
     }
@@ -33,30 +33,44 @@ class CommentComponent extends React.Component {
         );
 
         return <ul>
-            {this.props.messages.map(message => this.message(message))}
+            {this.props.messages.map(msg => CommentComponent.map(msg))}
         </ul>;
     }
 
 }
 
-let messages = [
-    {
-        id: 1,
-        time: (new Date()).getTimezoneOffset(),
-        login: 'Serg',
-        message: 'Hi!',
-        own: false
-    },
-    {
-        id: 2,
-        time: (new Date()).getTimezoneOffset(),
-        login: 'Max',
-        message: 'Hi!',
-        own: true
-    },
-];
+// let messages = [
+//     {
+//         id: 1,
+//         login: 'Serg',
+//         message: 'Hi!',
+//         own: false,
+//         createdAt: (new Date()).getUTCMilliseconds(),
+//     },
+//     {
+//         id: 2,
+//         login: 'Max',
+//         message: 'Hi!',
+//         own: true,
+//         createdAt: (new Date()).getUTCMilliseconds(),
+//     },
+// ];
 
-ReactDOM.render(
-    <CommentComponent messages={messages}/>,
-    document.getElementById('messages')
-);
+function chatRender(messages) {
+    ReactDOM.render(
+        <CommentComponent messages={messages}/>,
+        document.getElementById('messages')
+    );
+}
+
+// chatRender([
+//     {
+//         id: 1,
+//         login: 'Hello',
+//         message: 'Hello World',
+//         own: false,
+//         createdAt: (new Date()).now
+//     }
+// ]);
+
+export { chatRender };

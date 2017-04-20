@@ -41,8 +41,7 @@ class User extends Controller
             provider('domainSession')->persist();
 
             $this->builder()->cookie()->set('token', $user->id . '-' . $user->token, [
-                \Deimos\Cookie\Cookie::OPTION_DOMAIN =>
-                    $this->builder()->config()->get('cookie:domain')
+                \Deimos\Cookie\Cookie::OPTION_DOMAIN => $this->builder()->config()->get('cookie:domain')
             ]);
         }
 
@@ -53,34 +52,35 @@ class User extends Controller
     {
         $user = user();
 
-        $request = $this->request();
-        if (
-            $request->isPost() &&
-            trim($request->urlPath(), '/') === 'save-config' &&
-            $user
-        )
+        if (!$user)
         {
-            $email    = $request->data('email');
-            $password = $request->data('login');
-
-            if (!empty($email))
-            {
-                $user->email = $email;
-            }
-
-            if (!empty($password))
-            {
-                $password = passwordHash($password);
-
-                $user->password = $password;
-            }
-
-            count($user->getModify()) && $user->save();
-
-            echo $request->json([
-                'success' => 'ok'
-            ]);
+            throw new \InvalidArgumentException('User not found');
         }
+
+        $modify   = false;
+        $email    = $this->request()->data('email');
+        $password = $this->request()->data('login');
+
+        if (!empty($email))
+        {
+            $modify      = true;
+            $user->email = $email;
+        }
+
+        if (!empty($password))
+        {
+            $modify   = true;
+            $password = passwordHash($password);
+
+            $user->password = $password;
+        }
+
+        if ($modify)
+        {
+            $user->save();
+        }
+
+        return redirectRoute('fpm.general');
     }
 
     /**

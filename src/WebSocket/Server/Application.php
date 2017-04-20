@@ -2,25 +2,22 @@
 
 namespace Deimos\WebSocket\Server;
 
+use Deimos\ORM\Entity;
+use Deimos\ORM\Queries\Query;
+use Deimos\Paginate\Paginate;
 use Deimos\Secure\Secure;
 use Deimos\WebSocket\Builder;
-use Deimos\WebSocket\Models;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
 use Ratchet\ConnectionInterface;
 use Ratchet\MessageComponentInterface;
+use function Deimos\WebSocket\Controller\user;
 
 class Application implements MessageComponentInterface
 {
-    const STATUS_OK      = 'ok';
-    const STATUS_ERROR   = 'error';
-    const STATUS_INFO    = 'info';
-    const STATUS_WARNING = 'warning';
-
-    const DATA_TYPE_MESSAGE = 'message';
-    const DATA_TYPE_USERS   = 'users';
-    const DATA_TYPE_SETUP   = 'setup';
 
     /**
-     * @var \SplObjectStorage
+     * @var SplObjectStorage
      */
     protected $connections;
 
@@ -30,14 +27,19 @@ class Application implements MessageComponentInterface
     protected $users;
 
     /**
-     * @var \Deimos\ORM\ORM
-     */
-    protected $orm;
-
-    /**
      * @var Builder
      */
     protected $builder;
+
+    /**
+     * @var Logger
+     */
+    protected $logger;
+
+    /**
+     * @var \Deimos\ORM\ORM
+     */
+    protected $orm;
 
     /**
      * Chat constructor.
@@ -46,8 +48,14 @@ class Application implements MessageComponentInterface
     {
         $this->builder     = $builder;
         $this->orm         = $builder->orm();
-        $this->connections = new \SplObjectStorage();
+        $this->connections = new SplObjectStorage();
         $this->users       = [];
+
+        $path    = $builder->path('daemon.log');
+        $handler = new StreamHandler($path);
+
+        $this->logger = new Logger('daemon');
+        $this->logger->pushHandler($handler);
     }
 
     /**
@@ -59,66 +67,60 @@ class Application implements MessageComponentInterface
      */
     public function onOpen(ConnectionInterface $connection)
     {
-        $request = $connection->WebSocket->request;
+        $this->logger->addInfo('Connection `' . $this->resourceIdFrom($connection) . '` is established.');
+
         /**
          * @var $connection \Ratchet\WebSocket\Version\RFC6455\Connection
          */
-        $user = $this->getUser($request);
+        $user = $this->userFrom($connection);
 
         /**
          * @var $connection \Ratchet\WebSocket\Version\RFC6455\Connection
          */
         if (empty($user->id))
         {
-            $connection->send($this->message('<h2>Сперва залогиньтесь.</h2>'));
-
-            return;
+            return $this->send(
+                $connection,
+                $this->blob('For a start log in.', Types::INFO),
+                [$connection]
+            );
         }
 
-        $connection->send($this->message('', self::STATUS_OK, [
-            'type'     => self::DATA_TYPE_SETUP,
-            'messages' => $this->builder->orm()
-                ->repository('chat')
-                ->join(['u' => 'users'])
-                ->on('chat.userId', 'u.id')
-                ->select('text', 'time', 'login')
-                ->orderBy('time', 'DESC')
-                ->limit(50)
-                ->find(false)
-        ]));
+        /**
+         * @var $chatQuery Query
+         */
+        $chatQuery = $this->orm->repository('chat')
+            ->select('login', 'text', 'createdAt')
+            ->join(['u' => 'users'])
+            ->on('chat.userId', 'u.id')
+            ->orderBy('createdAt', 'DESC');
+
+        $pager = new Paginate();
+        $pager->queryPager($chatQuery);
+
+        $this->send(
+            $connection,
+            $this->blob($pager->currentItems(false), Types::ANY),
+            [$connection]
+        );
 
         $this->connections->attach($connection, $user);
-        $this->users[$user->id][$connection->resourceId] = $connection;
+        $this->users[$user->id][$this->resourceIdFrom($connection)] = $connection;
 
-        $this->renewUsers();
+        $this->onlineList($connection);
+
+        return null;
     }
 
     /**
      * отправляет пользователям обновленный список "онлайн"
      */
-    protected function renewUsers()
+    protected function onlineList(ConnectionInterface $connection)
     {
-        $users = [];
-        foreach ($this->connections as $connection)
-        {
-            $user = $this->connections[$connection];
-
-            $users[$user->id] = [
-                'id'     => $user->id,
-                'login'  => $user->login,
-                'avatar' => $user->avatar(),
-            ];
-        }
-
-        $message = $this->message('', self::STATUS_OK, [
-            'type' => self::DATA_TYPE_USERS,
-            'users' => $users,
-        ]);
-
-        foreach ($this->connections as $client)
-        {
-            $client->send($message);
-        }
+        $this->send(
+            $connection,
+            $this->blob($this->connections->asArray(), Types::USER_LIST)
+        );
     }
 
     /**
@@ -130,17 +132,17 @@ class Application implements MessageComponentInterface
      */
     public function onClose(ConnectionInterface $connection)
     {
-        $user = $this->getUser($connection->WebSocket->request);
-        echo __FUNCTION__ . PHP_EOL;
+        $user = $this->userFrom($connection);
 
         if($user)
         {
             $this->connections->detach($connection);
+            unset($this->users[$user->id()][$this->resourceIdFrom($connection)]);
 
-            $this->renewUsers();
+            $this->onlineList($connection);
         }
 
-        echo "Connection {$connection->resourceId} has disconnected\n";
+        $this->logger->addInfo('Connection `' . $this->resourceIdFrom($connection) . '` has disconnected');
     }
 
     /**
@@ -154,10 +156,7 @@ class Application implements MessageComponentInterface
      */
     public function onError(ConnectionInterface $connection, \Exception $e)
     {
-        echo __FUNCTION__ . PHP_EOL;
-        echo "An error has occurred: {$e->getMessage()}\n";
-
-        var_dump($e);
+        $this->logger->addError($e->getMessage());
 
         $connection->close();
     }
@@ -166,102 +165,111 @@ class Application implements MessageComponentInterface
      * Triggered when a client sends data through the socket
      *
      * @param  \Ratchet\ConnectionInterface $connection The socket/connection that sent the message to your application
-     * @param  string                       $msg        The message received
+     * @param  string                       $message    The message received
      *
      * @throws \Exception
      */
-    public function onMessage(ConnectionInterface $connection, $msg)
+    public function onMessage(ConnectionInterface $connection, $message)
     {
-        $request = $connection->WebSocket->request;
+        $message = json_decode($message);
 
-        if (!$this->checkTime($connection))
-        {
-            return;
-        }
-
-        $msg = json_decode($msg);
-
-        if (json_last_error() || empty($msg->text) || mb_strlen($msg->text) > 254)
-        {
-            return;
-        }
-
-        if (!empty($msg->to) && empty($this->users[$msg->to])) // если тот, кому послали не онлайн
-        {
-            return;
-        }
-
-        $user = $this->getUser($request);
-
-        if(!$user)
-        {
-            return;
-        }
-
-        $login = '';
-        if (!empty($msg->to))
-        {
-            $conn   = current($this->users[$msg->to]);
-            $userTo = $this->connections[$conn];
-
-            $login = '<b>&lap; ' . $user->login . ' > ' . $userTo->login . ' &gap;</b> ';
-        }
-        else
-        {
-            $login = '<b>&lap; ' . $user->login . ' &gap;</b> ';
-        }
-
-        $message = $login . '<i>' . date('Y-m-d H:i:s') . '</i>' . htmlspecialchars($msg->text);
-
-        if (!empty($msg->to))
-        {
-            if ($msg->to === $user->id)
-            {
-                current($this->users[$msg->to])->send($this->message('Нельзя отправить сообщение самому себе', self::STATUS_ERROR));
-
-                return;
-            }
-
-            foreach ($this->users[$msg->to] as $conn)
-            {
-                $conn->send($this->message($message, self::STATUS_OK, ['class' => 'private']));
-            }
-
-            foreach ($this->users[$user->id] as $conn)
-            {
-                $conn->send($this->message($message, self::STATUS_OK, ['class' => 'private-own']));
-            }
-
-            return;
-        }
+        $user = user();
 
         $this->builder->orm()->create('chat', [
             'userId' => $user->id,
-            'text'   => $msg->text,
-            'time'   => date('Y-m-d H:i:s')
+            'text'   => $message->text
         ]);
 
-        foreach ($this->connections as $client)
+        $this->send($connection, $this->blob($message->text));
+    }
+
+    /**
+     * @param ConnectionInterface    $connection
+     * @param array                  $blob
+     * @param SplObjectStorage|array $connections
+     */
+    protected function send(ConnectionInterface $connection, array $blob, $connections = null)
+    {
+        $connections = $connections ?: $this->connections;
+
+        /**
+         * @var ConnectionInterface $client
+         */
+        foreach ($connections as $client)
         {
-            $class = [];
+            $blob['own'] = $client === $connection;
 
-            if ($connection === $client)
-            {
-                $class = ['class' => 'own'];
-            }
-
-            $client->send($this->message($message, self::STATUS_OK, $class));
+            $client->send($this->json($blob));
         }
     }
 
     /**
-     * @param $request \Guzzle\Http\Message\EntityEnclosingRequest
+     * @param string $message
+     * @param int    $type
      *
-     * @return Models\User
+     * @return string
      */
-    protected function getUser($request)
+    protected function message($message, $type = Types::MESSAGE)
     {
-        $tokenCookie = urldecode($request->getCookie('token'));
+        return $this->json($this->blob($message, $type));
+    }
+
+    /**
+     * @param string|array        $data
+     * @param int                 $type
+     * @param ConnectionInterface $connection
+     *
+     * @return array
+     */
+    protected function blob($data, $type = Types::MESSAGE, ConnectionInterface $connection = null)
+    {
+        return Types::blob([
+            'connections' => $this->connections,
+            'connection'  => $connection,
+            'data'        => is_array($data) ? $data : null,
+            'message'     => is_array($data) ? null : $data,
+            'type'        => $type,
+        ]);
+    }
+
+    /**
+     * @param array $data
+     *
+     * @return string
+     */
+    protected function json(array $data)
+    {
+        return $this->builder->helper()->json()->encode($data);
+    }
+
+    /**
+     * @param ConnectionInterface $connection
+     *
+     * @return string
+     */
+    protected function resourceIdFrom(ConnectionInterface $connection)
+    {
+        return $connection->resourceId;
+    }
+
+    /**
+     * @param ConnectionInterface $connection
+     *
+     * @return \Guzzle\Http\Message\EntityEnclosingRequest
+     */
+    protected function connectionRequest(ConnectionInterface $connection)
+    {
+        return $connection->WebSocket->request;
+    }
+
+    /**
+     * @param ConnectionInterface $connection
+     *
+     * @return Entity|null
+     */
+    protected function userFrom(ConnectionInterface $connection)
+    {
+        $tokenCookie = urldecode($this->connectionRequest($connection)->getCookie('token'));
         $token       = (new Secure())->decrypt($tokenCookie);
         $token       = explode('-', $token, 2);
 
@@ -274,45 +282,6 @@ class Application implements MessageComponentInterface
             ->where('id', (int)$token[0])
             ->where('token', $token[1])
             ->findOne();
-    }
-
-    /**
-     * @param  \Ratchet\ConnectionInterface $connection The socket/connection that sent the message to your application
-     *
-     * @return bool
-     */
-    protected function checkTime(&$connection)
-    {
-        $currentTime = time();
-        if (!isset($connection->time) || (($connection->time + 1) < $currentTime))
-        {
-            $connection->spam = 0;
-            $connection->time = $currentTime;
-            return true;
-        }
-
-        if (!empty($connection->spam) && $connection->spam < 2)
-        {
-            usleep(500000);
-            $connection->send($this->message('Спам не приветствуется. Подождите немного', self::STATUS_WARNING));
-            $connection->spam = 2;
-        }
-        else if (empty($connection->spam))
-        {
-            $connection->spam = 1;
-            return true;
-        }
-
-        return false;
-    }
-
-    protected function message($text, $status = self::STATUS_OK, $moreData = [])
-    {
-        return json_encode(array_merge([
-            'text' => $text,
-            'status' => $status,
-            'type' => self::DATA_TYPE_MESSAGE
-        ], $moreData));
     }
 
 }
