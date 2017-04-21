@@ -14,10 +14,11 @@ class SplObjectStorage extends \SplObjectStorage
 
         foreach ($this as $obj)
         {
-            $results[] = $this[$obj];
+            $user                 = $this[$obj];
+            $results[$user->id()] = $user;
         }
 
-        return $results;
+        return array_values($results);
     }
 
 }

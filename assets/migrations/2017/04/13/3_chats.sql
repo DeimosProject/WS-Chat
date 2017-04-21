@@ -7,7 +7,7 @@ SET NAMES utf8mb4;
 
 CREATE TABLE `chats` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `text` varchar(255) NOT NULL,
+  `message` varchar(255) NOT NULL,
   `userId` int(11) NOT NULL,
   `createdAt` TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),

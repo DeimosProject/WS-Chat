@@ -7,9 +7,14 @@ use Deimos\ORM\Entity;
 class User extends Entity
 {
 
+    public static function generateAvatarPath($email)
+    {
+        return '//secure.gravatar.com/avatar/' . md5($email);
+    }
+
     public function avatar()
     {
-        return '//secure.gravatar.com/avatar/' . md5($this->email);
+        return static::generateAvatarPath($this->email);
     }
 
     /**
@@ -17,7 +22,10 @@ class User extends Entity
      */
     public function asArray()
     {
-        return ['avatar' => $this->avatar()] + parent::asArray();
+        return [
+            'login'  => $this->login,
+            'avatar' => $this->avatar()
+        ];
     }
 
 }

@@ -1,11 +1,6 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 "use strict";
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-exports.chatRender = undefined;
-
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _react = require("react");
@@ -24,16 +19,20 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var CommentComponent = function (_React$Component) {
-    _inherits(CommentComponent, _React$Component);
+var messages = [];
+var users = [];
+var webSocket = void 0;
 
-    function CommentComponent() {
-        _classCallCheck(this, CommentComponent);
+var MessageComponent = function (_React$Component) {
+    _inherits(MessageComponent, _React$Component);
 
-        return _possibleConstructorReturn(this, (CommentComponent.__proto__ || Object.getPrototypeOf(CommentComponent)).apply(this, arguments));
+    function MessageComponent() {
+        _classCallCheck(this, MessageComponent);
+
+        return _possibleConstructorReturn(this, (MessageComponent.__proto__ || Object.getPrototypeOf(MessageComponent)).apply(this, arguments));
     }
 
-    _createClass(CommentComponent, [{
+    _createClass(MessageComponent, [{
         key: "render",
         value: function render() {
             _reactDom2.default.render(_react2.default.createElement(
@@ -46,7 +45,7 @@ var CommentComponent = function (_React$Component) {
                 "ul",
                 null,
                 this.props.messages.map(function (msg) {
-                    return CommentComponent.map(msg);
+                    return MessageComponent.map(msg);
                 })
             );
         }
@@ -54,7 +53,7 @@ var CommentComponent = function (_React$Component) {
         key: "map",
         value: function map(msg) {
 
-            if (msg.own) {
+            if (msg.own === true) {
                 return _react2.default.createElement(
                     "li",
                     { key: msg.id, className: "clearfix" },
@@ -73,17 +72,9 @@ var CommentComponent = function (_React$Component) {
                             msg.login
                         ),
                         " ",
-                        _react2.default.createElement(
-                            "i",
-                            { className: "fa fa-circle me" },
-                            " "
-                        )
+                        _react2.default.createElement("i", { className: "fa fa-circle me" })
                     ),
-                    _react2.default.createElement(
-                        "div",
-                        { className: "message other-message float-right" },
-                        msg.message
-                    )
+                    _react2.default.createElement("div", { className: "message other-message float-right", dangerouslySetInnerHTML: { __html: msg.message } })
                 );
             }
 
@@ -96,11 +87,7 @@ var CommentComponent = function (_React$Component) {
                     _react2.default.createElement(
                         "span",
                         { className: "message-data-name" },
-                        _react2.default.createElement(
-                            "i",
-                            { className: "fa fa-circle online" },
-                            " "
-                        ),
+                        _react2.default.createElement("i", { className: "fa fa-circle online" }),
                         " ",
                         msg.login
                     ),
@@ -110,50 +97,166 @@ var CommentComponent = function (_React$Component) {
                         msg.createdAt
                     )
                 ),
+                _react2.default.createElement("div", { className: "message my-message", dangerouslySetInnerHTML: { __html: msg.message } })
+            );
+        }
+    }]);
+
+    return MessageComponent;
+}(_react2.default.Component);
+
+var UserComponent = function (_React$Component2) {
+    _inherits(UserComponent, _React$Component2);
+
+    function UserComponent() {
+        _classCallCheck(this, UserComponent);
+
+        return _possibleConstructorReturn(this, (UserComponent.__proto__ || Object.getPrototypeOf(UserComponent)).apply(this, arguments));
+    }
+
+    _createClass(UserComponent, [{
+        key: "render",
+        value: function render() {
+            users = this.props.users; // update list
+            return _react2.default.createElement(
+                "ul",
+                { className: "list scrollbar" },
+                this.props.users.map(function (user) {
+                    return UserComponent.map(user);
+                })
+            );
+        }
+    }], [{
+        key: "map",
+        value: function map(user) {
+
+            return _react2.default.createElement(
+                "li",
+                { key: user.login, className: "clearfix" },
+                _react2.default.createElement("img", { src: user.avatar + "?s=40", alt: user.login }),
                 _react2.default.createElement(
                     "div",
-                    { className: "message my-message" },
-                    msg.message
+                    { className: "about" },
+                    _react2.default.createElement(
+                        "div",
+                        { className: "name" },
+                        user.login
+                    ),
+                    _react2.default.createElement(
+                        "div",
+                        { className: "status" },
+                        _react2.default.createElement(
+                            "i",
+                            { className: "fa fa-circle online" },
+                            "\xA0"
+                        ),
+                        " online"
+                    )
                 )
             );
         }
     }]);
 
-    return CommentComponent;
+    return UserComponent;
 }(_react2.default.Component);
 
-// let messages = [
-//     {
-//         id: 1,
-//         login: 'Serg',
-//         message: 'Hi!',
-//         own: false,
-//         createdAt: (new Date()).getUTCMilliseconds(),
-//     },
-//     {
-//         id: 2,
-//         login: 'Max',
-//         message: 'Hi!',
-//         own: true,
-//         createdAt: (new Date()).getUTCMilliseconds(),
-//     },
-// ];
-
 function chatRender(messages) {
-    _reactDom2.default.render(_react2.default.createElement(CommentComponent, { messages: messages }), document.getElementById('messages'));
+    var element = document.getElementById('messages');
+
+    _reactDom2.default.render(_react2.default.createElement(MessageComponent, { messages: messages }), element);
+
+    element.scrollTop = element.scrollHeight;
 }
 
-// chatRender([
-//     {
-//         id: 1,
-//         login: 'Hello',
-//         message: 'Hello World',
-//         own: false,
-//         createdAt: (new Date()).now
-//     }
-// ]);
+function userRender(users) {
+    _reactDom2.default.render(_react2.default.createElement(UserComponent, { users: users }), document.getElementById('users-list'));
+}
 
-exports.chatRender = chatRender;
+function onMessage(e) {
+    var target = parse(e);
+
+    switch (target.type) {
+        case 1:
+            // message
+            target.data.own = target.own;
+            messages[target.data.id] = target.data;
+            chatRender(messages);
+            break;
+
+        case 2:
+            // any: messages, ...
+
+            if (typeof target.data[0].message !== "undefined") {
+                for (var i in target.data) {
+                    if (!target.data.hasOwnProperty(i)) {
+                        continue;
+                    }
+
+                    messages[target.data[i].id] = target.data[i];
+                }
+
+                chatRender(messages);
+            }
+            break;
+
+        case 3:
+            // user list
+            console.log(target);
+            userRender(target.data);
+            break;
+    }
+}
+
+function parse(e) {
+    return JSON.parse(e.data);
+}
+
+function sendMessage() {
+    var element = document.getElementById('message-to-send');
+    if (webSocket && element.value.trim().length) {
+        webSocket.send(element.value.trim());
+        element.value = '';
+    }
+}
+
+(function ws() {
+
+    var configure = document.getElementsByTagName('body')[0].dataset;
+
+    webSocket = new WebSocket(configure.wsDomain);
+
+    webSocket.onopen = function () {
+        _reactDom2.default.render(_react2.default.createElement(
+            "div",
+            { "data-loader": "timer" },
+            "\xA0"
+        ), document.getElementById('messages'));
+        console.log('You are connected');
+    };
+
+    webSocket.onmessage = onMessage;
+
+    webSocket.onclose = function () {
+        _reactDom2.default.render(_react2.default.createElement(
+            "div",
+            { "data-loader": "ball-auto" },
+            "\xA0"
+        ), document.getElementById('messages'));
+
+        requestAnimationFrame(ws);
+    };
+})();
+
+document.getElementById('message-to').onsubmit = function (e) {
+    e.preventDefault();
+    sendMessage();
+};
+
+document.getElementById('message-to-send').onkeydown = function (e) {
+    if ((e.ctrlKey || e.metaKey) && (e.keyCode === 13 || e.keyCode === 10)) {
+        sendMessage();
+    }
+};
 
 },{"react":182,"react-dom":31}],2:[function(require,module,exports){
 (function (process){

@@ -19,7 +19,7 @@ class Types
      */
     public static function blob(array $options)
     {
-        if ($options['type'] === self::ANY)
+        if ($options['type'] === self::ANY || $options['type'] === self::MESSAGE)
         {
             return $options;
         }
@@ -32,13 +32,7 @@ class Types
             ];
         }
 
-        return [
-            'type' => $options['type'],
-            'data' => [
-                'message' => $options['message'],
-                'user'    => $options['user'] ?? ($options['type'] === self::MESSAGE ? user()->asArray() : null)
-            ]
-        ];
+        throw new \InvalidArgumentException();
     }
 
 }

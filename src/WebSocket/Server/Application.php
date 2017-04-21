@@ -7,11 +7,11 @@ use Deimos\ORM\Queries\Query;
 use Deimos\Paginate\Paginate;
 use Deimos\Secure\Secure;
 use Deimos\WebSocket\Builder;
+use Deimos\WebSocket\Models\User;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Ratchet\ConnectionInterface;
 use Ratchet\MessageComponentInterface;
-use function Deimos\WebSocket\Controller\user;
 
 class Application implements MessageComponentInterface
 {
@@ -24,7 +24,7 @@ class Application implements MessageComponentInterface
     /**
      * @var array
      */
-    protected $users;
+    protected $antispam = [];
 
     /**
      * @var Builder
@@ -37,6 +37,16 @@ class Application implements MessageComponentInterface
     protected $logger;
 
     /**
+     * @var array
+     */
+    protected $users;
+
+    /**
+     * @var User
+     */
+    protected $user;
+
+    /**
      * @var \Deimos\ORM\ORM
      */
     protected $orm;
@@ -46,10 +56,10 @@ class Application implements MessageComponentInterface
      */
     public function __construct(Builder $builder)
     {
-        $this->builder     = $builder;
-        $this->orm         = $builder->orm();
         $this->connections = new SplObjectStorage();
+        $this->builder     = $builder;
         $this->users       = [];
+        $this->orm         = $builder->orm();
 
         $path    = $builder->path('daemon.log');
         $handler = new StreamHandler($path);
@@ -74,33 +84,50 @@ class Application implements MessageComponentInterface
          */
         $user = $this->userFrom($connection);
 
-        /**
-         * @var $connection \Ratchet\WebSocket\Version\RFC6455\Connection
-         */
         if (empty($user->id))
         {
-            return $this->send(
+            $this->send(
                 $connection,
                 $this->blob('For a start log in.', Types::INFO),
                 [$connection]
             );
+
+            return;
         }
 
         /**
          * @var $chatQuery Query
          */
         $chatQuery = $this->orm->repository('chat')
-            ->select('login', 'text', 'createdAt')
+            ->select(
+                ['id' => 'chat.id'],
+                'login',
+                'email',
+                'message',
+                ['own' => $this->orm->database()->raw('if(login=?,1,0)', [$user->login])],
+                ['createdAt' => 'chat.createdAt']
+            )
             ->join(['u' => 'users'])
             ->on('chat.userId', 'u.id')
             ->orderBy('createdAt', 'DESC');
 
         $pager = new Paginate();
         $pager->queryPager($chatQuery);
+        $pager->limit(300);
+
+        $messages = $pager->currentItems(false);
+        $messages = array_map(function ($message)
+        {
+            $message['own']    = (bool)$message['own'];
+            $message['avatar'] = User::generateAvatarPath($message['email']);
+            unset($message['email']);
+
+            return $message;
+        }, $messages);
 
         $this->send(
             $connection,
-            $this->blob($pager->currentItems(false), Types::ANY),
+            $this->blob($messages, Types::ANY),
             [$connection]
         );
 
@@ -108,12 +135,12 @@ class Application implements MessageComponentInterface
         $this->users[$user->id][$this->resourceIdFrom($connection)] = $connection;
 
         $this->onlineList($connection);
-
-        return null;
     }
 
     /**
      * отправляет пользователям обновленный список "онлайн"
+     *
+     * @param ConnectionInterface $connection
      */
     protected function onlineList(ConnectionInterface $connection)
     {
@@ -171,16 +198,28 @@ class Application implements MessageComponentInterface
      */
     public function onMessage(ConnectionInterface $connection, $message)
     {
-        $message = json_decode($message);
+        $user    = $this->userFrom($connection);
+        $message = trim($message);
 
-        $user = user();
+        if ($user && !empty($message) && $this->antispam($connection))
+        {
+            $data = $this->builder->orm()->create('chat', [
+                'message' => htmlspecialchars($message),
+                'userId'  => $user->id
+            ]);
 
-        $this->builder->orm()->create('chat', [
-            'userId' => $user->id,
-            'text'   => $message->text
-        ]);
 
-        $this->send($connection, $this->blob($message->text));
+            if ($data)
+            {
+                $this->send($connection, $this->blob([
+                    'id'        => $data->id,
+                    'login'     => $user->login,
+                    'avatar'    => User::generateAvatarPath($user->email ?? 'default'),
+                    'message'   => $data->message,
+                    'createdAt' => date('d-m-Y H:i:s')
+                ]));
+            }
+        }
     }
 
     /**
@@ -201,17 +240,6 @@ class Application implements MessageComponentInterface
 
             $client->send($this->json($blob));
         }
-    }
-
-    /**
-     * @param string $message
-     * @param int    $type
-     *
-     * @return string
-     */
-    protected function message($message, $type = Types::MESSAGE)
-    {
-        return $this->json($this->blob($message, $type));
     }
 
     /**
@@ -262,6 +290,21 @@ class Application implements MessageComponentInterface
         return $connection->WebSocket->request;
     }
 
+    protected function antispam(ConnectionInterface $connection)
+    {
+        if (isset($this->connections[$connection]))
+        {
+            $user = $this->connections[$connection];
+            $time = $this->antispam[$user->id] ?? null; // first
+
+            $this->antispam[$user->id] = microtime(1);
+
+            return null === $time || $time < (microtime(1) - .4);
+        }
+
+        return true;
+    }
+
     /**
      * @param ConnectionInterface $connection
      *
@@ -269,19 +312,31 @@ class Application implements MessageComponentInterface
      */
     protected function userFrom(ConnectionInterface $connection)
     {
-        $tokenCookie = urldecode($this->connectionRequest($connection)->getCookie('token'));
-        $token       = (new Secure())->decrypt($tokenCookie);
-        $token       = explode('-', $token, 2);
-
-        if(empty($token[1]))
+        if (!isset($this->connections[$connection]))
         {
-            return null;
+            $tokenCookie = urldecode($this->connectionRequest($connection)->getCookie('token'));
+            $token       = (new Secure())->decrypt($tokenCookie);
+            $token       = explode('-', $token, 2);
+
+            if (empty($token[1]))
+            {
+                return null;
+            }
+
+            $user = $this->orm->repository('user')
+                ->where('id', (int)$token[0])
+                ->where('token', $token[1])
+                ->findOne();
+
+            if (!$user)
+            {
+                return null;
+            }
+
+            $this->connections->attach($connection, $user);
         }
 
-        return $this->orm->repository('user')
-            ->where('id', (int)$token[0])
-            ->where('token', $token[1])
-            ->findOne();
+        return $this->connections[$connection];
     }
 
 }
