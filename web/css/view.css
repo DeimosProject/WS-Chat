@@ -16,6 +16,10 @@ body {
   color: white; }
   body [data-loader] {
     margin: auto auto; }
+  body #messages [data-loader='timer'] {
+    border-color: #573f7f; }
+    body #messages [data-loader='timer']:before, body #messages [data-loader='timer']:after {
+      background-color: #574f7f; }
 
 .container {
   margin: 0 auto;

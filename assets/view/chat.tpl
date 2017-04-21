@@ -25,7 +25,7 @@
 
                 <div class="chat-about">
                     <div class="chat-with">Chat Deimos Project</div>
-                    <div class="chat-num-messages">already <span id="already"></span> messages</div>
+                    <div class="chat-num-messages" id="already"></div>
                 </div>
                 <i class="fa fa-star"></i>
 
@@ -37,7 +37,9 @@
                 </div>
             </div>
 
-            <div class="chat-history scrollbar" id="messages"></div>
+            <div class="chat-history scrollbar" id="messages">
+                <div data-loader="timer"></div>
+            </div>
 
             <div class="chat-message clearfix">
                 <form id="message-to">
@@ -57,4 +59,8 @@
 {block css}
     <link href="{'/css/view.css'|asset}" rel="stylesheet"/>
     <link href="{'/node_modules/css-loading/loaders.min.css'|asset}" rel="stylesheet"/>
+{/block}
+
+{block script}
+    <script defer async src="{'/js/view.js'|asset}"></script>
 {/block}

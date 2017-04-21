@@ -38,7 +38,9 @@ var MessageComponent = function (_React$Component) {
             _reactDom2.default.render(_react2.default.createElement(
                 "span",
                 null,
-                this.props.messages.length
+                "already ",
+                this.props.messages.length,
+                " messages"
             ), document.getElementById('already'));
 
             return _react2.default.createElement(
@@ -145,11 +147,7 @@ var UserComponent = function (_React$Component2) {
                     _react2.default.createElement(
                         "div",
                         { className: "status" },
-                        _react2.default.createElement(
-                            "i",
-                            { className: "fa fa-circle online" },
-                            "\xA0"
-                        ),
+                        _react2.default.createElement("i", { className: "fa fa-circle online" }),
                         " online"
                     )
                 )
@@ -226,23 +224,16 @@ function sendMessage() {
     webSocket = new WebSocket(configure.wsDomain);
 
     webSocket.onopen = function () {
-        _reactDom2.default.render(_react2.default.createElement(
-            "div",
-            { "data-loader": "timer" },
-            "\xA0"
-        ), document.getElementById('messages'));
+        _reactDom2.default.render(_react2.default.createElement("div", { "data-loader": "timer" }), document.getElementById('messages'));
         console.log('You are connected');
     };
 
     webSocket.onmessage = onMessage;
 
     webSocket.onclose = function () {
-        _reactDom2.default.render(_react2.default.createElement(
-            "div",
-            { "data-loader": "ball-auto" },
-            "\xA0"
-        ), document.getElementById('messages'));
+        _reactDom2.default.render(_react2.default.createElement("div", { "data-loader": "ball-auto" }), document.getElementById('messages'));
 
+        userRender([]);
         requestAnimationFrame(ws);
     };
 })();

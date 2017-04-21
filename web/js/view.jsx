@@ -31,7 +31,7 @@ class MessageComponent extends React.Component {
 
     render() {
         ReactDOM.render(
-            <span>{this.props.messages.length}</span>,
+            <span>already {this.props.messages.length} messages</span>,
             document.getElementById('already')
         );
 
@@ -51,7 +51,7 @@ class UserComponent extends React.Component {
             <div className="about">
                 <div className="name">{user.login}</div>
                 <div className="status">
-                    <i className="fa fa-circle online">&nbsp;</i> online
+                    <i className="fa fa-circle online" /> online
                 </div>
             </div>
         </li>;
@@ -137,7 +137,7 @@ function sendMessage() {
 
     webSocket.onopen = function () {
         ReactDOM.render(
-            <div data-loader="timer">&nbsp;</div>,
+            <div data-loader="timer" />,
             document.getElementById('messages')
         );
         console.log('You are connected');
@@ -147,10 +147,11 @@ function sendMessage() {
 
     webSocket.onclose = function () {
         ReactDOM.render(
-            <div data-loader="ball-auto">&nbsp;</div>,
+            <div data-loader="ball-auto" />,
             document.getElementById('messages')
         );
 
+        userRender([]);
         requestAnimationFrame(ws);
     };
 
