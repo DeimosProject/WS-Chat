@@ -2,19 +2,32 @@
   "name": "deimos/ws-example",
   "description": "WebSocket example.",
   "keywords": [
+    "websocket",
+    "ws",
+    "deimos"
   ],
   "homepage": "https://github.com/DeimosProject/ws-example",
   "license": "MIT",
   "type": "project",
   "require": {
     "cboden/Ratchet": "~0.3",
-    "deimos/orm": "~2.0",
-    "deimos/auth": "~0.0",
-    "deimos/request": "~1.0"
+    "deimos/auth": "~1.0",
+    "deimos/flow": "~1.0",
+    "deimos/router": "~1.0",
+    "deimos/controller": "~2.0",
+    "deimos/migrate": "~1.0",
+    "symfony/console": "^3.2",
+    "phpdocumentor/reflection-docblock": "^3.1",
+    "monolog/monolog": "^1.22",
+    "deimos/paginate": "^2.0"
   },
   "autoload": {
     "psr-4": {
       "Deimos\\": "src/"
-    }
+    },
+    "files": [
+      "helpers/http.php",
+      "helpers/auth.php"
+    ]
   }
 }

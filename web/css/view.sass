@@ -1,0 +1,253 @@
+@import url(https://fonts.googleapis.com/css?family=Lato:400,700)
+
+$green: #86BB71
+$blue: #94C2ED
+$orange: #d78263
+$gray: #d9dce0
+
+*, *:before, *:after
+  box-sizing: border-box
+
+li
+  list-style-type: none
+
+.container
+  padding-left: 0
+  padding-right: 0
+
+body
+  background: #f9ab61
+  font: 14px/20px "Lato", Arial, sans-serif
+  padding: 40px 0
+  color: white
+
+  [data-loader]
+    margin: auto auto
+  #messages [data-loader='timer']
+    border-color: #573f7f
+    &:before,&:after
+      background-color: #574f7f
+
+.container
+  margin: 0 auto
+  background: #573f7f
+  border-radius: 5px
+
+.scrollbar
+  &::-webkit-scrollbar
+    width: 6px
+    border-radius: 5px
+    background-color: $gray
+  &::-webkit-scrollbar-thumb
+    border: 1px solid $gray
+    border-radius: 5px
+    background-color: $orange
+
+.people-list
+
+  li.active
+    border-radius: 3px
+    background: #4b3d61
+    width: 95%
+
+  .search
+    padding: 20px
+    input[placeholder]::placeholder
+      color: white
+
+  input
+    border-radius: 3px
+    border: none
+    padding: 14px
+    color: white
+    background: #333438
+    width: 95%
+    font-size: 14px
+
+  ul
+    overflow-y: auto
+    height: 745px
+    padding: 20px
+    li
+      padding-bottom: 20px
+
+  img
+    float: left
+
+  .about
+    float: left
+    //margin-top: 8px
+    padding-left: 8px
+
+  .status
+    color: $gray
+
+.chat.dark
+  //pointer-events: none
+  background: #555
+  .chat-about
+    color: #ccc
+  a
+    color: white
+  form#message-to
+    textarea
+      background: #ccc
+    button
+      color: #c0c0c0
+  .chat-history
+    color: white
+    li
+      opacity: .75
+
+.chat
+  background: #F2F5F8
+  border-top-right-radius: 5px
+  border-bottom-right-radius: 5px
+
+  color: #434651
+
+  .modal-view
+    display: none
+    width: 95%
+    height: 480px
+    position: absolute
+    top: 0
+    z-index: 1
+    left: 0
+    right: 0
+    margin: auto auto
+    background: rgba(87, 63, 127, 0.9)
+    border-bottom-right-radius: 5px
+    border-bottom-left-radius: 5px
+    color: white
+    & h1
+      padding: 2px 20px
+
+  .chat-header
+    padding: 20px
+    border-bottom: 2px solid white
+
+    .fa-star
+      color: $green
+
+    img
+      float: left
+
+    .chat-about
+      float: left
+      padding-left: 10px
+      margin-top: 6px
+
+    .chat-with
+      font-weight: bold
+      font-size: 16px
+
+    .chat-num-messages
+      color: $orange
+
+  .chat-history
+    padding: 30px 30px 20px
+    border-bottom: 2px solid white
+    overflow-y: auto
+    height: 575px
+
+    .message-data
+      margin-bottom: 15px
+
+    .message-data-time
+      color: $orange
+      padding-left: 6px
+
+    .message
+      color: white
+      padding: 18px 20px
+      line-height: 26px
+      font-size: 16px
+      border-radius: 7px
+      margin-bottom: 30px
+      width: 90%
+      position: relative
+
+      &:after
+        bottom: 100%
+        left: 7%
+        border: solid transparent
+        content: " "
+        height: 0
+        width: 0
+        position: absolute
+        pointer-events: none
+        border-bottom-color: $green
+        border-width: 10px
+        margin-left: -10px
+
+    .my-message
+      background: $green
+
+    .other-message
+      background: $blue
+
+      &:after
+        border-bottom-color: $blue
+        left: 93%
+
+  .chat-message
+    padding: 30px
+
+    textarea
+      width: 100%
+      border: none
+      padding: 10px 20px
+      font: 14px/22px "Lato", Arial, sans-serif
+      margin-bottom: 10px
+      border-radius: 5px
+      resize: none
+
+    .fa-file-o, .fa-file-image-o
+      font-size: 16px
+      color: gray
+      cursor: pointer
+
+    button
+      float: right
+      color: $blue
+      font-size: 16px
+      text-transform: uppercase
+      border: none
+      cursor: pointer
+      font-weight: bold
+      //background: #F2F5F8
+      background: transparent
+
+      &:hover
+        color: darken($blue, 7%)
+
+.online, .offline, .me
+  margin-right: 3px
+  font-size: 10px
+
+.online
+  color: $green
+
+.offline
+  color: $orange
+
+.me
+  color: $blue
+
+.align-left
+  text-align: left
+
+.align-right
+  text-align: right
+
+.float-right
+  float: right
+
+.clearfix:after
+  visibility: hidden
+  display: block
+  font-size: 0
+  content: " "
+  clear: both
+  height: 0

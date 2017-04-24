@@ -1,0 +1,7 @@
+#!/usr/bin/php
+<?php
+
+include_once __DIR__ . '/bootstrap.php';
+
+echo $resolver->execute(), PHP_EOL;
+exit(0);
