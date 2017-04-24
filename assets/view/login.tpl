@@ -37,5 +37,5 @@
 {/block}
 
 {block css}
-    <link href="{'/css/login.css'}" rel="stylesheet"/>
+    <link href="{'/css/login.css'|asset}" rel="stylesheet"/>
 {/block}
